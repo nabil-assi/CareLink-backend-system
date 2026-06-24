@@ -41,4 +41,26 @@ class PatientAuthController extends Controller
             'patient' => $patient,
         ], 201);
     }
+
+    public function login(Request $request)
+    {
+        $request->validate(['email' => 'required|email', 'password' => 'required']);
+
+        $patient = Patient::where('email', $request->email)->first();
+
+        if (! $patient || ! Hash::check($request->password, $patient->password)) {
+            return response()->json(['message' => 'بيانات الدخول غير صحيحة'], 401);
+        }
+
+        return response()->json([
+            'access_token' => $patient->createToken('patient_token')->plainTextToken,
+            'token_type' => 'Bearer',
+            'user' => [
+                'id' => $patient->id,
+                'name' => $patient->name,
+                'email' => $patient->email,
+                'role' => 'patient',
+            ],
+        ]);
+    }
 }

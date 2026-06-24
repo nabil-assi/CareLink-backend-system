@@ -49,4 +49,31 @@ class DoctorAuthController extends Controller
             'doctor' => $doctor,
         ], 201);
     }
+
+    public function login(Request $request)
+    {
+        $request->validate(['email' => 'required|email', 'password' => 'required']);
+
+        $doctor = Doctor::where('email', $request->email)->first();
+
+        if (! $doctor || ! Hash::check($request->password, $doctor->password)) {
+            return response()->json(['message' => 'بيانات الدخول غير صحيحة'], 401);
+        }
+
+        // التحقق من حالة التفعيل
+        if ($doctor->status !== 'active') {
+            return response()->json(['message' => 'حسابك بانتظار موافقة الإدارة'], 403);
+        }
+
+        return response()->json([
+            'access_token' => $doctor->createToken('doctor_token')->plainTextToken,
+            'token_type' => 'Bearer',
+            'user' => [
+                'id' => $doctor->id,
+                'name' => $doctor->name,
+                'email' => $doctor->email,
+                'role' => 'doctor',
+            ],
+        ]);
+    }
 }
