@@ -4,9 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Patient;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-
+use App\Services\NotificationService;
 class PatientAuthController extends Controller
 {
     public function register(Request $request)
@@ -63,4 +64,46 @@ class PatientAuthController extends Controller
             ],
         ]);
     }
+
+    public function forgotPassword(Request $request)
+    {
+        // التحقق من وجود الإيميل في جدول المرضى حصراً
+        $request->validate(['email' => 'required|email|exists:patients,email']);
+
+        $patient = Patient::where('email', $request->email)->first();
+        
+        // توليد الـ Token
+        $token = Password::createToken($patient);
+        
+        // إرسال الإيميل
+        NotificationService::send('password_reset', $patient, ['token' => $token]);
+
+        return response()->json(['message' => 'تم إرسال رابط إعادة تعيين كلمة السر إلى إيميلك']);
+    }
+
+    public function resetPassword(Request $request)
+{
+    // 1. التحقق من البيانات
+    $request->validate([
+        'email' => 'required|email|exists:patients,email',
+        'token' => 'required',
+        'password' => 'required|confirmed|min:8',
+    ]);
+
+    // 2. تنفيذ إعادة التعيين باستخدام Password Broker
+    $status = Password::broker()->reset(
+        $request->only('email', 'password', 'password_confirmation', 'token'),
+        function ($user, $password) {
+            $user->password = \Illuminate\Support\Facades\Hash::make($password);
+            $user->save();
+        }
+    );
+
+    // 3. التحقق من نتيجة العملية
+    if ($status === Password::PASSWORD_RESET) {
+        return response()->json(['message' => 'تم تغيير كلمة السر بنجاح'], 200);
+    }
+
+    return response()->json(['message' => 'فشل إعادة التعيين، الرمز غير صحيح أو منتهي الصلاحية'], 400);
+}
 }

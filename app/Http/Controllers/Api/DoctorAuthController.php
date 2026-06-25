@@ -6,7 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Doctor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-
+use Illuminate\Support\Facades\Password;
+use App\Services\NotificationService;
 class DoctorAuthController extends Controller
 {
     public function register(Request $request)
@@ -76,4 +77,43 @@ class DoctorAuthController extends Controller
             ],
         ]);
     }
+
+    public function forgotPassword(Request $request)
+    {
+        $request->validate(['email' => 'required|email|exists:doctors,email']);
+
+        $doctor = Doctor::where('email', $request->email)->first();
+        
+        // توليد الـ Token الخاص بـ لارافيل
+        $token = Password::createToken($doctor);
+        
+        // إرسال الإيميل عبر خدمتنا
+        NotificationService::send('password_reset', $doctor, ['token' => $token]);
+
+        return response()->json(['message' => 'تم إرسال رابط إعادة تعيين كلمة السر إلى إيميلك']);
+    }
+    public function resetPassword(Request $request)
+{
+    // التحقق من البيانات
+    $request->validate([
+        'email' => 'required|email|exists:doctors,email',
+        'token' => 'required',
+        'password' => 'required|confirmed|min:8',
+    ]);
+
+    // تنفيذ إعادة التعيين
+    $status = Password::broker()->reset(
+        $request->only('email', 'password', 'password_confirmation', 'token'),
+        function ($user, $password) {
+            $user->password = \Illuminate\Support\Facades\Hash::make($password);
+            $user->save();
+        }
+    );
+
+    if ($status === Password::PASSWORD_RESET) {
+        return response()->json(['message' => 'تم تغيير كلمة سر الطبيب بنجاح'], 200);
+    }
+
+    return response()->json(['message' => 'فشل إعادة التعيين، التوكين غير صالح'], 400);
+}
 }

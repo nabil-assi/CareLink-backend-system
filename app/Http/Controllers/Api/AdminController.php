@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Doctor;
-
+use App\Services\NotificationService;
 class AdminController extends Controller
 {
+
+    
     // 1. عرض قائمة الأطباء الذين ينتظرون التفعيل (حالتهم inactive)
     public function showPending()
     {
@@ -33,6 +35,7 @@ class AdminController extends Controller
 
         // تحديث الحالة إلى active
         $doctor->update(['status' => 'active']);
+        NotificationService::send('doctor_approved', $doctor, ['name' => $doctor->name]);
 
         return response()->json([
             'message' => 'تم تفعيل حساب الطبيب '.$doctor->name.' بنجاح',
