@@ -28,4 +28,6 @@ class AdminAuthController extends Controller
             'admin' => $admin,
         ]);
     }
+
+    
 }
