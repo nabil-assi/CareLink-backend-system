@@ -30,4 +30,5 @@ RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
 
 # تشغيل السيرفر
 EXPOSE 8000
-CMD php artisan serve --host=0.0.0.0 --port=8000
+# استبدل السطر الأخير (CMD) بهذا:
+CMD php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000
