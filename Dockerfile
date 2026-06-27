@@ -1,9 +1,16 @@
-# اختيار نسخة PHP
+# استخدم نسخة Alpine
 FROM php:8.4-fpm-alpine
 
-# تثبيت متطلبات النظام
-RUN apt-get update && apt-get install -y \
-    libpng-dev libjpeg-dev libfreetype6-dev zip unzip git nodejs npm \
+# تثبيت متطلبات النظام باستخدام apk بدلاً من apt-get
+RUN apk add --no-cache \
+    libpng-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
+    zip \
+    unzip \
+    git \
+    nodejs \
+    npm \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install gd pdo pdo_mysql
 
