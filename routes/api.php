@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\AdController;
+use App\Http\Controllers\Api\Admin\NotificationController;
+use App\Http\Controllers\Api\Admin\PostController;
 use App\Http\Controllers\Api\AdminAuthController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\DoctorAuthController;
@@ -21,6 +23,7 @@ Route::get('/admin/list', [AdminController::class, 'getAllAdmins']);
 
 // --- مسارات محمية للأدمن ---
 Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
+
     Route::get('/doctors', [DoctorController::class, 'index']);
     Route::get('/pending-doctors', [AdminController::class, 'showPending']);
     Route::patch('/approve-doctor/{id}', [AdminController::class, 'approveDoctor']);
@@ -28,11 +31,16 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
 
     Route::get('/ads', [AdController::class, 'index']);
     Route::post('/ads', [AdController::class, 'store']);
-    Route::post('/ads/{id}', [AdController::class, 'update']); 
+    Route::post('/ads/{id}', [AdController::class, 'update']);
     Route::delete('/ads/{id}', [AdController::class, 'destroy']);
 
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::post('/notifications/general', [NotificationController::class, 'sendGeneral']);
+    Route::post('/notifications/user', [NotificationController::class, 'sendToUser']);
+
+    Route::get('/posts', [PostController::class, 'index']);
     Route::post('/posts', [PostController::class, 'store']);
-    Route::post('/notifications', [NotificationController::class, 'sendGeneralNotification']);
+    Route::delete('/posts/{id}', [PostController::class, 'destroy']);
 
 });
 
