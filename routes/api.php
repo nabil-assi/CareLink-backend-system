@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\AdController;
 use App\Http\Controllers\Api\AdminAuthController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\DoctorAuthController;
@@ -16,6 +17,7 @@ Route::post('/doctor/register', [DoctorAuthController::class, 'register']);
 Route::post('/doctor/login', [DoctorAuthController::class, 'login']);
 
 Route::post('/admin/login', [AdminAuthController::class, 'login']);
+Route::get('/admin/list', [AdminController::class, 'getAllAdmins']);
 
 // --- مسارات محمية للأدمن ---
 Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
@@ -23,6 +25,15 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::get('/pending-doctors', [AdminController::class, 'showPending']);
     Route::patch('/approve-doctor/{id}', [AdminController::class, 'approveDoctor']);
     Route::delete('/reject-doctor/{id}', [AdminController::class, 'rejectDoctor']);
+
+    Route::get('/ads', [AdController::class, 'index']);
+    Route::post('/ads', [AdController::class, 'store']);
+    Route::post('/ads/{id}', [AdController::class, 'update']); 
+    Route::delete('/ads/{id}', [AdController::class, 'destroy']);
+
+    Route::post('/posts', [PostController::class, 'store']);
+    Route::post('/notifications', [NotificationController::class, 'sendGeneralNotification']);
+
 });
 
 // --- مسارات محمية للطبيب ---

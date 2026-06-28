@@ -1,14 +1,27 @@
 <?php
 
 namespace App\Http\Controllers\Api;
-
+use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\Controller;
 use App\Models\Doctor;
+use App\Models\Admin; 
 use App\Services\NotificationService;
+
 class AdminController extends Controller
 {
+    public function getAllAdmins()
+    {
+        // جلب جميع الأدمنز (يفضل دائماً عدم إرجاع كلمة السر)
+        $admins = Admin::select('id', 'name', 'email', 'created_at')->get();
 
-    
+        return response()->json([
+            'status' => true,
+            'message' => 'تم جلب قائمة المسؤولين بنجاح',
+            'data' => $admins,
+        ], 200);
+    } 
+
+
     // 1. عرض قائمة الأطباء الذين ينتظرون التفعيل (حالتهم inactive)
     public function showPending()
     {
