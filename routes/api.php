@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\Admin\NotificationController;
 use App\Http\Controllers\Api\Admin\PostController;
 use App\Http\Controllers\Api\AdminAuthController;
 use App\Http\Controllers\Api\AdminController;
+use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\DoctorAuthController;
 use App\Http\Controllers\Api\DoctorController;
 use App\Http\Controllers\Api\PatientAuthController;
@@ -20,6 +21,7 @@ Route::post('/doctor/login', [DoctorAuthController::class, 'login']);
 
 Route::post('/admin/login', [AdminAuthController::class, 'login']);
 Route::get('/admin/list', [AdminController::class, 'getAllAdmins']);
+Route::get('/admin/patients', [PatientController::class, 'getAllPatients']);
 
 // --- مسارات محمية للأدمن ---
 Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
@@ -49,6 +51,11 @@ Route::prefix('doctor')->middleware(['auth:sanctum', 'doctor'])->group(function 
     Route::post('/forgot-password', [DoctorAuthController::class, 'forgotPassword']);
     Route::post('/reset-password', [DoctorAuthController::class, 'resetPassword']);
 
+    Route::get('/appointments', [AppointmentController::class, 'index']);
+    Route::patch('/appointments/{id}/cancel', [AppointmentController::class, 'cancel']);
+
+    Route::post('/appointments/{appointment}/medical-records', [AppointmentController::class, 'storeMedicalRecord']);
+    Route::get('/appointments/{appointment}/medical-records', [AppointmentController::class, 'getMedicalRecord']);
 });
 
 // --- مسارات محمية للمريض ---
@@ -56,6 +63,12 @@ Route::prefix('patient')->middleware(['auth:sanctum', 'patient'])->group(functio
     Route::get('/profile', [PatientController::class, 'profile']);
     Route::patch('/profile', [PatientController::class, 'updateProfile']);
     Route::get('/medical-profile', [PatientController::class, 'getMedicalProfile']);
+
+    Route::post('/appointments', [AppointmentController::class, 'store']);
+    Route::get('/appointments', [AppointmentController::class, 'index']);
+    Route::patch('/appointments/{id}/cancel', [AppointmentController::class, 'cancel']);
+
+    Route::get('/medical-records', [PatientController::class, 'myMedicalRecords']);
 
     Route::post('/forgot-password', [PatientAuthController::class, 'forgotPassword']);
     Route::post('/reset-password', [PatientAuthController::class, 'resetPassword']);

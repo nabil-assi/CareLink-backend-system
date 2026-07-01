@@ -2,16 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Auth\Passwords\CanResetPassword;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use Illuminate\Auth\Passwords\CanResetPassword; 
-use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract; 
-
 
 class Doctor extends Authenticatable
 {
-    use HasApiTokens, Notifiable, CanResetPassword;
+    use CanResetPassword, HasApiTokens, Notifiable;
 
     protected $fillable = [
         'name',
@@ -38,5 +36,10 @@ class Doctor extends Authenticatable
         return [
             'password' => 'hashed',
         ];
+    }
+
+    public function appointments()
+    {
+        return $this->hasMany(Appointment::class);
     }
 }

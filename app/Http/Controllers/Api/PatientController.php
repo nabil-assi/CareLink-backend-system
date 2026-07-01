@@ -3,10 +3,25 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\MedicalRecord;
+use App\Models\Patient;
+use App\Models\PatientProfile;
 use Illuminate\Http\Request;
 
 class PatientController extends Controller
 {
+    public function getAllPatients()
+    {
+        // جلب جميع الأدمنز (يفضل دائماً عدم إرجاع كلمة السر)
+        $admins = Patient::select('id', 'name', 'email', 'created_at')->get();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'تم جلب قائمة المرضى بنجاح',
+            'data' => $admins,
+        ], 200);
+    }
+
     /**
      * عرض بيانات المريض الشخصية
      * المسار: GET /api/patient/profile
@@ -51,25 +66,36 @@ class PatientController extends Controller
         ]);
     }
 
+    public function getMedicalProfile(Request $request)
+    {
+        // نستخدم firstOrCreate لضمان وجود بروفايل دائماً
+        $profile = PatientProfile::firstOrCreate(
+            ['patient_id' => $request->user()->id], // الشرط: هل يوجد بروفايل لهذا المريض؟
+            [ // البيانات الافتراضية إذا لم يوجد
+                'blood_type' => null,
+                'weight_kg' => 0,
+                'height_cm' => 0,
+                'is_diabetic' => false,
+                'is_hypertensive' => false,
+                'is_smoker' => false,
+            ]
+        );
 
-public function getMedicalProfile(Request $request)
-{
-    // نستخدم firstOrCreate لضمان وجود بروفايل دائماً
-    $profile = \App\Models\PatientProfile::firstOrCreate(
-        ['patient_id' => $request->user()->id], // الشرط: هل يوجد بروفايل لهذا المريض؟
-        [ // البيانات الافتراضية إذا لم يوجد
-            'blood_type' => null,
-            'weight_kg' => 0,
-            'height_cm' => 0,
-            'is_diabetic' => false,
-            'is_hypertensive' => false,
-            'is_smoker' => false,
-        ]
-    );
+        return response()->json([
+            'message' => 'بيانات الملف الطبي',
+            'data' => $profile,
+        ], 200);
+    }
 
-    return response()->json([
-        'message' => 'بيانات الملف الطبي',
-        'data' => $profile
-    ], 200);
-}
+    // عرض كل السجلات الطبية للمريض
+    public function myMedicalRecords(Request $request)
+    {
+        // جلب كل السجلات الطبية مع بيانات الطبيب الذي كتبها
+        $records = MedicalRecord::where('patient_id', $request->user()->id)
+            ->with(['doctor:id,name', 'appointment:id,scheduled_at'])
+            ->latest() // الأحدث أولاً
+            ->get();
+
+        return response()->json(['data' => $records]);
+    }
 }

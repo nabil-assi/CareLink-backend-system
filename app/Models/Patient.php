@@ -6,8 +6,6 @@ use Illuminate\Auth\Passwords\CanResetPassword;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
- use App\Models\PatientProfile;
-
 
 class Patient extends Authenticatable
 {
@@ -41,5 +39,10 @@ class Patient extends Authenticatable
     public function profile()
     {
         return $this->hasOne(PatientProfile::class);
+    }
+
+    public function appointments()
+    {
+        return $this->hasMany(Appointment::class);
     }
 }
