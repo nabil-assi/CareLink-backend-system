@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Patient;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Password;
 
 class PatientAuthController extends Controller
 {
@@ -36,14 +36,14 @@ class PatientAuthController extends Controller
             'gender' => $validated['gender'],
         ]);
 
-         $patient->profile()->create([]);
+        $patient->profile()->create([]);
 
         $token = $patient->createToken('patient_token')->plainTextToken;
 
         return response()->json([
             'message' => 'تم تسجيل المريض بنجاح',
             'access_token' => $token,
-            'patient' => $patient->load('profile'), 
+            'patient' => $patient->load('profile'),
         ], 201);
     }
 
@@ -95,43 +95,53 @@ class PatientAuthController extends Controller
 
     public function forgotPassword(Request $request)
     {
-        // التحقق من وجود الإيميل في جدول المرضى حصراً
         $request->validate(['email' => 'required|email|exists:patients,email']);
 
         $patient = Patient::where('email', $request->email)->first();
 
-        // توليد الـ Token
-        $token = Password::createToken($patient);
+        // توليد كود عشوائي من 5 أرقام
+        $otp = random_int(10000, 99999);
 
-        // إرسال الإيميل
-        NotificationService::send('password_reset', $patient, ['token' => $token]);
+        // تخزين الكود في الكاش لمدة 10 دقائق
+        Cache::put('otp_patient_'.$patient->email, $otp, now()->addMinutes(10));
 
-        return response()->json(['message' => 'تم إرسال رابط إعادة تعيين كلمة السر إلى إيميلك']);
+        // إرسال الكود عبر الإيميل
+        NotificationService::send('password_reset', $patient, ['otp' => $otp]);
+
+        return response()->json(['message' => 'تم إرسال رمز التحقق إلى بريدك الإلكتروني']);
     }
 
     public function resetPassword(Request $request)
     {
-        // 1. التحقق من البيانات
         $request->validate([
             'email' => 'required|email|exists:patients,email',
-            'token' => 'required',
+            'token' => 'required|numeric', // الكود الذي أرسله المستخدم
             'password' => 'required|confirmed|min:8',
         ]);
 
-        // 2. تنفيذ إعادة التعيين باستخدام Password Broker
-        $status = Password::broker()->reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function ($user, $password) {
-                $user->password = Hash::make($password);
-                $user->save();
-            }
-        );
+        $email = $request->email;
+        $otp = $request->token;
 
-        // 3. التحقق من نتيجة العملية
-        if ($status === Password::PASSWORD_RESET) {
-            return response()->json(['message' => 'تم تغيير كلمة السر بنجاح'], 200);
+        // 1. استرجاع الكود من الكاش
+        $storedOtp = Cache::get('otp_patient_'.$email);
+
+       
+        // 2. التحقق من صحة الكود
+        // استبدل سطر التحقق بهذا:
+        if (! $storedOtp || (string) $storedOtp !== (string) $otp) {
+            // استخدم dd لرؤية القيم إذا استمرت المشكلة:
+ 
+            return response()->json(['message' => 'الكود غير صحيح أو انتهت صلاحيته'], 400);
         }
 
-        return response()->json(['message' => 'فشل إعادة التعيين، الرمز غير صحيح أو منتهي الصلاحية'], 400);
+        // 3. تحديث كلمة السر للمريض
+        $patient = Patient::where('email', $email)->first();
+        $patient->password = Hash::make($request->password);
+        $patient->save();
+
+        // 4. حذف الكود من الكاش بعد الاستخدام
+        Cache::forget('otp_patient_'.$email);
+
+        return response()->json(['message' => 'تم تغيير كلمة السر بنجاح'], 200);
     }
 }

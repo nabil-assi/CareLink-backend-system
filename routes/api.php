@@ -45,11 +45,13 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::delete('/posts/{id}', [PostController::class, 'destroy']);
 });
 
+
+    Route::post('/doctor/forgot-password', [DoctorAuthController::class, 'forgotPassword']);
+    Route::post('/doctor/reset-password', [DoctorAuthController::class, 'resetPassword']);
+
 // --- مسارات محمية للطبيب ---
 Route::prefix('doctor')->middleware(['auth:sanctum', 'doctor'])->group(function () {
     Route::get('/profile', [DoctorController::class, 'profile']);
-    Route::post('/forgot-password', [DoctorAuthController::class, 'forgotPassword']);
-    Route::post('/reset-password', [DoctorAuthController::class, 'resetPassword']);
 
     Route::get('/appointments', [AppointmentController::class, 'index']);
     Route::patch('/appointments/{id}/cancel', [AppointmentController::class, 'cancel']);
@@ -57,6 +59,9 @@ Route::prefix('doctor')->middleware(['auth:sanctum', 'doctor'])->group(function 
     Route::post('/appointments/{appointment}/medical-records', [AppointmentController::class, 'storeMedicalRecord']);
     Route::get('/appointments/{appointment}/medical-records', [AppointmentController::class, 'getMedicalRecord']);
 });
+
+ Route::post('/patient/forgot-password', [PatientAuthController::class, 'forgotPassword']);
+    Route::post('/patient/reset-password', [PatientAuthController::class, 'resetPassword']);
 
 // --- مسارات محمية للمريض ---
 Route::prefix('patient')->middleware(['auth:sanctum', 'patient'])->group(function () {
@@ -70,7 +75,5 @@ Route::prefix('patient')->middleware(['auth:sanctum', 'patient'])->group(functio
 
     Route::get('/medical-records', [PatientController::class, 'myMedicalRecords']);
 
-    Route::post('/forgot-password', [PatientAuthController::class, 'forgotPassword']);
-    Route::post('/reset-password', [PatientAuthController::class, 'resetPassword']);
-
+   
 });

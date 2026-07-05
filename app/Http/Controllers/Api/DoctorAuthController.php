@@ -4,10 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Doctor;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Password;
 use App\Services\NotificationService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Hash;
+
 class DoctorAuthController extends Controller
 {
     public function register(Request $request)
@@ -83,37 +84,46 @@ class DoctorAuthController extends Controller
         $request->validate(['email' => 'required|email|exists:doctors,email']);
 
         $doctor = Doctor::where('email', $request->email)->first();
-        
-        // توليد الـ Token الخاص بـ لارافيل
-        $token = Password::createToken($doctor);
-        
-        // إرسال الإيميل عبر خدمتنا
-        NotificationService::send('password_reset', $doctor, ['token' => $token]);
 
-        return response()->json(['message' => 'تم إرسال رابط إعادة تعيين كلمة السر إلى إيميلك']);
+        // 1. توليد كود عشوائي من 5 أرقام
+        $otp = rand(10000, 99999);
+
+        // 2. تخزين الكود في جدول الـ password_resets أو الحقول المخصصة للطبيب
+        // يُفضل استخدام Cache لتجنب كثرة العمليات على قاعدة البيانات
+        Cache::put('otp_'.$doctor->email, $otp, now()->addMinutes(10));
+
+        // 3. إرسال الكود عبر الإيميل
+        NotificationService::send('password_reset', $doctor, ['otp' => $otp]);
+
+        return response()->json(['message' => 'تم إرسال رمز التحقق إلى بريدك الإلكتروني']);
     }
+
     public function resetPassword(Request $request)
-{
-    // التحقق من البيانات
-    $request->validate([
-        'email' => 'required|email|exists:doctors,email',
-        'token' => 'required',
-        'password' => 'required|confirmed|min:8',
-    ]);
+    {
+        $request->validate([
+            'email' => 'required|email|exists:doctors,email',
+            'token' => 'required|numeric', // هنا التوكين هو كود الـ 5 أرقام
+            'password' => 'required|confirmed|min:8',
+        ]);
 
-    // تنفيذ إعادة التعيين
-    $status = Password::broker()->reset(
-        $request->only('email', 'password', 'password_confirmation', 'token'),
-        function ($user, $password) {
-            $user->password = \Illuminate\Support\Facades\Hash::make($password);
-            $user->save();
+        $email = $request->email;
+        $otp = $request->token;
+
+        // 1. التحقق من وجود الكود في الـ Cache ومطابقته
+        $storedOtp = Cache::get('otp_'.$email);
+
+        if (! $storedOtp || (int) $storedOtp !== (int) $otp) {
+            return response()->json(['message' => 'الكود غير صحيح أو انتهت صلاحيته'], 400);
         }
-    );
 
-    if ($status === Password::PASSWORD_RESET) {
-        return response()->json(['message' => 'تم تغيير كلمة سر الطبيب بنجاح'], 200);
+        // 2. تحديث كلمة السر
+        $doctor = Doctor::where('email', $email)->first();
+        $doctor->password = Hash::make($request->password);
+        $doctor->save();
+
+        // 3. حذف الكود من الـ Cache بعد الاستخدام الناجح
+        Cache::forget('otp_'.$email);
+
+        return response()->json(['message' => 'تم تغيير كلمة السر بنجاح'], 200);
     }
-
-    return response()->json(['message' => 'فشل إعادة التعيين، التوكين غير صالح'], 400);
-}
 }
