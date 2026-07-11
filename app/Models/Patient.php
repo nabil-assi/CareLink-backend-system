@@ -6,10 +6,10 @@ use Illuminate\Auth\Passwords\CanResetPassword;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-
+use Illuminate\Database\Eloquent\Factories\HasFactory; // أضف هذا السطر
 class Patient extends Authenticatable
 {
-    use CanResetPassword, HasApiTokens, Notifiable;
+    use CanResetPassword, HasApiTokens, Notifiable, HasFactory;
 
     protected $fillable = [
         'name',

@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\DoctorAuthController;
 use App\Http\Controllers\Api\DoctorController;
 use App\Http\Controllers\Api\PatientAuthController;
 use App\Http\Controllers\Api\PatientController;
+use App\Http\Controllers\Api\ChatController; // أضف هذا السطر في الأعلى
 use Illuminate\Support\Facades\Route;
 
 // --- مسارات عامة (بدون حماية) ---
@@ -45,9 +46,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::delete('/posts/{id}', [PostController::class, 'destroy']);
 });
 
-
-    Route::post('/doctor/forgot-password', [DoctorAuthController::class, 'forgotPassword']);
-    Route::post('/doctor/reset-password', [DoctorAuthController::class, 'resetPassword']);
+Route::post('/doctor/forgot-password', [DoctorAuthController::class, 'forgotPassword']);
+Route::post('/doctor/reset-password', [DoctorAuthController::class, 'resetPassword']);
 
 // --- مسارات محمية للطبيب ---
 Route::prefix('doctor')->middleware(['auth:sanctum', 'doctor'])->group(function () {
@@ -60,8 +60,8 @@ Route::prefix('doctor')->middleware(['auth:sanctum', 'doctor'])->group(function 
     Route::get('/appointments/{appointment}/medical-records', [AppointmentController::class, 'getMedicalRecord']);
 });
 
- Route::post('/patient/forgot-password', [PatientAuthController::class, 'forgotPassword']);
-    Route::post('/patient/reset-password', [PatientAuthController::class, 'resetPassword']);
+Route::post('/patient/forgot-password', [PatientAuthController::class, 'forgotPassword']);
+Route::post('/patient/reset-password', [PatientAuthController::class, 'resetPassword']);
 
 // --- مسارات محمية للمريض ---
 Route::prefix('patient')->middleware(['auth:sanctum', 'patient'])->group(function () {
@@ -75,5 +75,9 @@ Route::prefix('patient')->middleware(['auth:sanctum', 'patient'])->group(functio
 
     Route::get('/medical-records', [PatientController::class, 'myMedicalRecords']);
 
-   
+});
+
+Route::prefix('conversations')->middleware('auth:sanctum')->group(function () {
+    Route::get('/{conversationId}/messages', [ChatController::class, 'getMessages']);
+    Route::post('/{conversationId}/messages', [ChatController::class, 'sendMessage']);
 });

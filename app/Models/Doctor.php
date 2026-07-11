@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Auth\Passwords\CanResetPassword;
+use Illuminate\Database\Eloquent\Factories\HasFactory; // أضف هذا السطر
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
 class Doctor extends Authenticatable
 {
-    use CanResetPassword, HasApiTokens, Notifiable;
+    use CanResetPassword, HasApiTokens, Notifiable, HasFactory;
 
     protected $fillable = [
         'name',
@@ -19,6 +20,7 @@ class Doctor extends Authenticatable
         'date_of_birth',
         'profile_picture',
         'specialty',
+        'is_available',
         'address',
         'national_id',
         'years_of_experience',

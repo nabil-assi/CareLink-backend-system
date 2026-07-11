@@ -60,21 +60,31 @@ class AppointmentController extends Controller
             'record_type' => 'required|in:diagnosis,lab_result,prescription,radiology',
             'diagnosis' => 'nullable|string',
             'notes' => 'nullable|string',
-            // التعامل مع الملفات المرفقة (أشعة/تحاليل) لاحقاً
+            'file' => 'nullable|file|mimes:pdf,jpg,png|max:5120',
         ]);
 
-        // جلب الموعد للتأكد أن الطبيب هو من عاين المريض
         $appointment = Appointment::where('id', $appointmentId)
             ->where('doctor_id', $request->user()->id)
             ->firstOrFail();
 
-        // إنشاء السجل الطبي
-        $record = MedicalRecord::create([
+        // تجهيز البيانات
+        $data = [
             'patient_id' => $appointment->patient_id,
             'doctor_id' => $request->user()->id,
             'appointment_id' => $appointment->id,
-            ...$validated,
-        ]);
+            'record_type' => $validated['record_type'],
+            'diagnosis' => $validated['diagnosis'] ?? null,
+            'notes' => $validated['notes'] ?? null,
+        ];
+
+        // معالجة الرفع
+        if ($request->hasFile('file')) {
+            $path = $request->file('file')->store('medical_records', 'public');
+            $data['file_url'] = $path;
+            $data['file_name'] = $request->file('file')->getClientOriginalName();
+        }
+
+        $record = MedicalRecord::create($data);
 
         return response()->json(['message' => 'تم حفظ السجل الطبي بنجاح', 'data' => $record]);
     }

@@ -3,9 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-
+use Illuminate\Database\Eloquent\Factories\HasFactory; // أضف هذا السطر
 class PatientProfile extends Model
-{
+{    use HasFactory;
+
     public function patient()
     {
         return $this->belongsTo(Patient::class);
@@ -18,3 +19,4 @@ class PatientProfile extends Model
         'emergency_contact_name', 'emergency_contact_phone',
     ];
 }
+ 

@@ -22,7 +22,7 @@ return new class extends Migration
             // ENUM للحالة والنوع (استخدم مصفوفات لتحديد القيم المسموحة)
             $table->enum('type', ['online', 'in_person'])->default('in_person');
             $table->enum('status', ['pending', 'confirmed', 'completed', 'cancelled'])->default('pending');
-
+            $table->boolean('is_available')->default(true);
             $table->text('description')->nullable();
             $table->decimal('fees', 8, 2)->nullable();
             $table->string('meeting_link')->nullable(); // للـ online
