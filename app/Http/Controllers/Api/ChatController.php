@@ -28,8 +28,7 @@ class ChatController extends Controller
 
     public function getMessages($conversationId)
     {
-        // جلب الرسائل مع التأكد من صلاحية الوصول
-        $messages = Message::where('conversation_id', $conversationId)
+         $messages = Message::where('conversation_id', $conversationId)
             ->orderBy('created_at', 'asc')
             ->get();
 

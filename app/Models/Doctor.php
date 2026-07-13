@@ -10,7 +10,7 @@ use Laravel\Sanctum\HasApiTokens;
 
 class Doctor extends Authenticatable
 {
-    use CanResetPassword, HasApiTokens, Notifiable, HasFactory;
+    use CanResetPassword, HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
         'name',
@@ -38,6 +38,11 @@ class Doctor extends Authenticatable
         return [
             'password' => 'hashed',
         ];
+    }
+
+    public function notifications()
+    {
+        return $this->morphMany(Notification::class, 'notifiable');
     }
 
     public function appointments()

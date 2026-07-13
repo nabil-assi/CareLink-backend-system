@@ -1,26 +1,27 @@
 <?php
 
 namespace App\Http\Controllers\Api;
-use Illuminate\Support\Facades\Storage;
+
 use App\Http\Controllers\Controller;
+use App\Models\Admin;
+use App\Models\Broadcast;
 use App\Models\Doctor;
-use App\Models\Admin; 
 use App\Services\NotificationService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class AdminController extends Controller
 {
     public function getAllAdmins()
     {
-        // جلب جميع الأدمنز (يفضل دائماً عدم إرجاع كلمة السر)
-        $admins = Admin::select('id', 'name', 'email', 'created_at')->get();
+         $admins = Admin::select('id', 'name', 'email', 'created_at')->get();
 
         return response()->json([
             'status' => true,
             'message' => 'تم جلب قائمة المسؤولين بنجاح',
             'data' => $admins,
         ], 200);
-    } 
-
+    }
 
     // 1. عرض قائمة الأطباء الذين ينتظرون التفعيل (حالتهم inactive)
     public function showPending()
@@ -71,5 +72,20 @@ class AdminController extends Controller
         return response()->json([
             'message' => 'تم رفض طلب الطبيب وحذف بياناته من النظام',
         ], 200);
+    }
+
+    public function sendBroadcast(Request $request)
+    {
+        $request->validate(['message' => 'required', 'target' => 'required']);
+
+         $broadcast = Broadcast::create($request->all());
+
+ 
+        return response()->json(['message' => 'تم الإرسال والحفظ', 'data' => $broadcast]);
+    }
+
+    public function getAllBroadcasts()
+    {
+        return response()->json(Broadcast::latest()->get());
     }
 }

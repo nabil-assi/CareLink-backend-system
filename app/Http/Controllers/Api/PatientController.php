@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Broadcast;
 use App\Models\MedicalRecord;
 use App\Models\Patient;
 use App\Models\PatientProfile;
@@ -22,10 +23,7 @@ class PatientController extends Controller
         ], 200);
     }
 
-    /**
-     * عرض بيانات المريض الشخصية
-     * المسار: GET /api/patient/profile
-     */
+ 
     public function profile(Request $request)
     {
         // نستخدم load لتحميل العلاقة مع المريض في نفس الاستعلام
@@ -37,10 +35,7 @@ class PatientController extends Controller
         ], 200);
     }
 
-    /**
-     * تحديث بيانات المريض (اختياري)
-     * المسار: PUT /api/patient/profile/update
-     */
+   
     public function updateProfile(Request $request)
     {
 
@@ -70,8 +65,8 @@ class PatientController extends Controller
     {
         // نستخدم firstOrCreate لضمان وجود بروفايل دائماً
         $profile = PatientProfile::firstOrCreate(
-            ['patient_id' => $request->user()->id], // الشرط: هل يوجد بروفايل لهذا المريض؟
-            [ // البيانات الافتراضية إذا لم يوجد
+            ['patient_id' => $request->user()->id],  
+            [ 
                 'blood_type' => null,
                 'weight_kg' => 0,
                 'height_cm' => 0,
@@ -97,5 +92,15 @@ class PatientController extends Controller
             ->get();
 
         return response()->json(['data' => $records]);
+    }
+
+    public function getBroadcasts()
+    {
+        // جلب الرسائل الموجهة للجميع أو للمرضى فقط
+        $broadcasts = Broadcast::whereIn('target', ['all', 'patients'])
+            ->latest()
+            ->get();
+
+        return response()->json(['data' => $broadcasts], 200);
     }
 }

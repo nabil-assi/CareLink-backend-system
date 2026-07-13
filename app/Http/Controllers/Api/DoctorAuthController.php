@@ -88,12 +88,9 @@ class DoctorAuthController extends Controller
         // 1. توليد كود عشوائي من 5 أرقام
         $otp = rand(10000, 99999);
 
-        // 2. تخزين الكود في جدول الـ password_resets أو الحقول المخصصة للطبيب
-        // يُفضل استخدام Cache لتجنب كثرة العمليات على قاعدة البيانات
-        Cache::put('otp_'.$doctor->email, $otp, now()->addMinutes(10));
+         Cache::put('otp_'.$doctor->email, $otp, now()->addMinutes(10));
 
-        // 3. إرسال الكود عبر الإيميل
-        NotificationService::send('password_reset', $doctor, ['otp' => $otp]);
+         NotificationService::send('password_reset', $doctor, ['otp' => $otp]);
 
         return response()->json(['message' => 'تم إرسال رمز التحقق إلى بريدك الإلكتروني']);
     }
@@ -109,20 +106,17 @@ class DoctorAuthController extends Controller
         $email = $request->email;
         $otp = $request->token;
 
-        // 1. التحقق من وجود الكود في الـ Cache ومطابقته
-        $storedOtp = Cache::get('otp_'.$email);
+         $storedOtp = Cache::get('otp_'.$email);
 
         if (! $storedOtp || (int) $storedOtp !== (int) $otp) {
             return response()->json(['message' => 'الكود غير صحيح أو انتهت صلاحيته'], 400);
         }
 
-        // 2. تحديث كلمة السر
-        $doctor = Doctor::where('email', $email)->first();
+         $doctor = Doctor::where('email', $email)->first();
         $doctor->password = Hash::make($request->password);
         $doctor->save();
 
-        // 3. حذف الكود من الـ Cache بعد الاستخدام الناجح
-        Cache::forget('otp_'.$email);
+         Cache::forget('otp_'.$email);
 
         return response()->json(['message' => 'تم تغيير كلمة السر بنجاح'], 200);
     }

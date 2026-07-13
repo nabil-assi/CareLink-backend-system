@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Broadcast;
 use App\Models\Conversation;
 use App\Models\Doctor;
 use Illuminate\Http\Request;
@@ -32,5 +33,15 @@ class DoctorController extends Controller
             ->get();
 
         return response()->json(['data' => $conversations]);
+    }
+
+    public function getBroadcasts()
+    {
+        // جلب الرسائل الموجهة للجميع أو للأطباء فقط
+        $broadcasts = Broadcast::whereIn('target', ['all', 'doctors'])
+            ->latest()
+            ->get();
+
+        return response()->json(['data' => $broadcasts], 200);
     }
 }

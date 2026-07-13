@@ -19,13 +19,12 @@ class AppointmentController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        // إضافة الـ patient_id من المستخدم المسجل
-        $appointment = $request->user()->appointments()->create([
+         $appointment = $request->user()->appointments()->create([
             'doctor_id' => $validated['doctor_id'],
             'scheduled_at' => $validated['scheduled_at'],
             'type' => $validated['type'],
             'description' => $validated['description'],
-            'status' => 'pending', // دائماً يبدأ بـ pending
+            'status' => 'pending',  
         ]);
 
         return response()->json(['message' => 'تم طلب الموعد بانتظار موافقة الطبيب', 'data' => $appointment], 201);
@@ -92,8 +91,7 @@ class AppointmentController extends Controller
     // جلب سجل طبي معين لموعد (للطبيب)
     public function getMedicalRecord(Request $request, $appointmentId)
     {
-        // نتأكد أن الموعد يخص هذا الطبيب
-        $appointment = Appointment::where('id', $appointmentId)
+         $appointment = Appointment::where('id', $appointmentId)
             ->where('doctor_id', $request->user()->id)
             ->firstOrFail();
 
@@ -106,8 +104,7 @@ class AppointmentController extends Controller
         return response()->json(['data' => $record]);
     }
 
-    // في AppointmentController
-    public function completeAppointment(Request $request, $id)
+     public function completeAppointment(Request $request, $id)
     {
         $appointment = Appointment::where('id', $id)
             ->where('doctor_id', $request->user()->id)

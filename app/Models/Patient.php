@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Auth\Passwords\CanResetPassword;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
-use Illuminate\Database\Eloquent\Factories\HasFactory; // أضف هذا السطر
+use Laravel\Sanctum\HasApiTokens; // أضف هذا السطر
+
 class Patient extends Authenticatable
 {
-    use CanResetPassword, HasApiTokens, Notifiable, HasFactory;
+    use CanResetPassword, HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
         'name',
@@ -39,6 +40,11 @@ class Patient extends Authenticatable
     public function profile()
     {
         return $this->hasOne(PatientProfile::class);
+    }
+
+    public function notifications()
+    {
+        return $this->morphMany(Notification::class, 'notifiable');
     }
 
     public function appointments()
