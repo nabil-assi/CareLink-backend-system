@@ -29,14 +29,6 @@ class Patient extends Authenticatable
         'password',
     ];
 
-    // لجعل كلمة السر تُشفّر دائماً عند التخزين
-    protected function casts(): array
-    {
-        return [
-            'password' => 'hashed',
-        ];
-    }
-
     public function profile()
     {
         return $this->hasOne(PatientProfile::class);
