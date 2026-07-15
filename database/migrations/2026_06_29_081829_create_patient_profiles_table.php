@@ -14,8 +14,7 @@ return new class extends Migration
         Schema::create('patient_profiles', function (Blueprint $table) {
             $table->id();
             // هنا الربط الأساسي
-            $table->foreignId('patient_id')->constrained('patients')->onDelete('cascade');
-
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->enum('blood_type', ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'])->nullable();
             $table->float('weight_kg')->nullable();
             $table->float('height_cm')->nullable();

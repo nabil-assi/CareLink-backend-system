@@ -12,10 +12,11 @@ class AdController extends Controller
     // عرض جميع الإعلانات
     public function index()
     {
-        return response()->json(['data' => Ad::all()], 200);
+        return response()->json(['status' => true, 'data' => Ad::latest()->get()], 200);
     }
 
-     public function store(Request $request)
+    // إضافة إعلان جديد
+    public function store(Request $request)
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
@@ -29,29 +30,37 @@ class AdController extends Controller
 
         $ad = Ad::create($validated);
 
-        return response()->json(['message' => 'تم إضافة الإعلان بنجاح', 'data' => $ad], 201);
+        return response()->json([
+            'message' => 'تم إضافة الإعلان بنجاح', 
+            'data' => $ad
+        ], 201);
     }
 
-    // تعديل إعلان (مع تغيير الصورة)
+    // تعديل إعلان
     public function update(Request $request, $id)
     {
         $ad = Ad::findOrFail($id);
 
         $validated = $request->validate([
-            'title' => 'sometimes|string',
+            'title' => 'sometimes|string|max:255',
             'image' => 'sometimes|image|mimes:jpeg,png,jpg|max:2048',
             'link' => 'nullable|url',
         ]);
 
         if ($request->hasFile('image')) {
-            // حذف الصورة القديمة
-            Storage::disk('public')->delete($ad->image_path);
+            // التحقق من وجود الصورة القديمة وحذفها
+            if ($ad->image_path) {
+                Storage::disk('public')->delete($ad->image_path);
+            }
             $validated['image_path'] = $request->file('image')->store('ads', 'public');
         }
 
         $ad->update($validated);
 
-        return response()->json(['message' => 'تم تحديث الإعلان بنجاح', 'data' => $ad]);
+        return response()->json([
+            'message' => 'تم تحديث الإعلان بنجاح', 
+            'data' => $ad
+        ]);
     }
 
     // حذف إعلان
@@ -59,8 +68,10 @@ class AdController extends Controller
     {
         $ad = Ad::findOrFail($id);
 
-        // حذف الصورة من السيرفر
-        Storage::disk('public')->delete($ad->image_path);
+        if ($ad->image_path) {
+            Storage::disk('public')->delete($ad->image_path);
+        }
+        
         $ad->delete();
 
         return response()->json(['message' => 'تم حذف الإعلان بنجاح']);

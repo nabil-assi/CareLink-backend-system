@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\MedicalRecord;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class AppointmentController extends Controller
@@ -13,14 +14,22 @@ class AppointmentController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'doctor_id' => 'required|exists:doctors,id',
+            // التأكد أن المستخدم هو طبيب
+            'doctor_id' => 'required|exists:users,id', 
             'scheduled_at' => 'required|date|after:now',
             'type' => 'required|in:online,in_person',
             'description' => 'nullable|string',
         ]);
 
-         $appointment = $request->user()->appointments()->create([
+        // التحقق الإضافي أن الشخص المختار طبيب فعلاً
+        $doctor = User::where('id', $validated['doctor_id'])->where('role', 'doctor')->first();
+        if (!$doctor) {
+            return response()->json(['message' => 'المعرف المختار ليس لطبيب'], 422);
+        }
+
+        $appointment = $request->user()->appointments()->create([
             'doctor_id' => $validated['doctor_id'],
+            'patient_id' => $request->user()->id, // مأخوذ من auth
             'scheduled_at' => $validated['scheduled_at'],
             'type' => $validated['type'],
             'description' => $validated['description'],
@@ -33,7 +42,8 @@ class AppointmentController extends Controller
     // عرض مواعيد المريض
     public function index(Request $request)
     {
-        return response()->json(['data' => $request->user()->appointments()->with('doctor')->get()]);
+        // استخدام العلاقة المباشرة من الـ User
+        return response()->json(['data' => $request->user()->appointments()->with('doctor:id,name')->get()]);
     }
 
     // إلغاء موعد (للمريض أو الطبيب)
@@ -42,7 +52,7 @@ class AppointmentController extends Controller
         $appointment = Appointment::where('id', $id)
             ->where(function ($q) use ($request) {
                 $q->where('patient_id', $request->user()->id)
-                    ->orWhere('doctor_id', $request->user()->id); // الطبيب أيضاً يقدر يلغي
+                    ->orWhere('doctor_id', $request->user()->id);
             })->firstOrFail();
 
         $appointment->update([
@@ -62,11 +72,11 @@ class AppointmentController extends Controller
             'file' => 'nullable|file|mimes:pdf,jpg,png|max:5120',
         ]);
 
+        // التأكد أن الموعد يخص الطبيب الحالي
         $appointment = Appointment::where('id', $appointmentId)
             ->where('doctor_id', $request->user()->id)
             ->firstOrFail();
 
-        // تجهيز البيانات
         $data = [
             'patient_id' => $appointment->patient_id,
             'doctor_id' => $request->user()->id,
@@ -76,7 +86,6 @@ class AppointmentController extends Controller
             'notes' => $validated['notes'] ?? null,
         ];
 
-        // معالجة الرفع
         if ($request->hasFile('file')) {
             $path = $request->file('file')->store('medical_records', 'public');
             $data['file_url'] = $path;
@@ -88,7 +97,6 @@ class AppointmentController extends Controller
         return response()->json(['message' => 'تم حفظ السجل الطبي بنجاح', 'data' => $record]);
     }
 
-    // جلب سجل طبي معين لموعد (للطبيب)
     public function getMedicalRecord(Request $request, $appointmentId)
     {
          $appointment = Appointment::where('id', $appointmentId)

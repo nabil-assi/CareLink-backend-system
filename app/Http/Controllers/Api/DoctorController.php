@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Broadcast;
 use App\Models\Conversation;
-use App\Models\Doctor;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class DoctorController extends Controller
@@ -15,8 +15,11 @@ class DoctorController extends Controller
      */
     public function index()
     {
-        // جلب الأطباء مع الترتيب حسب الأحدث
-        $doctors = Doctor::latest()->get();
+        // جلب المستخدمين الذين لديهم دور 'doctor'
+        $doctors = User::where('role', 'doctor')
+            ->with('doctorProfile') // جلب البيانات الطبية مع المستخدم
+            ->latest()
+            ->get();
 
         return response()->json([
             'status' => true,
@@ -24,12 +27,15 @@ class DoctorController extends Controller
         ], 200);
     }
 
-    // في ChatController (للطبيب)
+    /**
+     * عرض محادثات الطبيب
+     */
     public function getMyConversations(Request $request)
     {
+        // جلب المحادثات الخاصة بالطبيب الحالي
         $conversations = Conversation::where('doctor_id', $request->user()->id)
-            ->with(['patient:id,name']) // جلب اسم المريض
-            ->latest('updated_at') // الترتيب حسب آخر نشاط
+            ->with(['patient:id,name']) // علاقة الـ patient في موديل Conversation يجب أن تعود لـ User
+            ->latest('updated_at')
             ->get();
 
         return response()->json(['data' => $conversations]);

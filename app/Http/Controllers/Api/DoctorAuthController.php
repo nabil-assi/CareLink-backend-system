@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Doctor;
+use App\Models\User;
+use App\Models\DoctorProfile;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class DoctorAuthController extends Controller
 {
@@ -15,82 +17,76 @@ class DoctorAuthController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:doctors',
-            'national_id' => 'required|string|min:9|max:9|unique:doctors',
+            'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8',
             'phone' => 'required|string',
-            'date_of_birth' => 'required|date',
-            'address' => 'required|string',
-            'gender' => 'required|in:male,female',
             'specialty' => 'required|string',
             'years_of_experience' => 'required|integer',
-            'credential_document' => 'required|file|mimes:pdf,jpg,png|max:2048', // حد أقصى 2 ميجا
-        ]);
-        $path = $request->file('credential_document')->store('documents', 'public');
-
-        $doctor = Doctor::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'national_id' => $validated['national_id'],
-            'password' => Hash::make($validated['password']),
-            'phone' => $validated['phone'],
-            'date_of_birth' => $validated['date_of_birth'],
-            'address' => $validated['address'],
-            'gender' => $validated['gender'],
-            'specialty' => $validated['specialty'],
-            'years_of_experience' => $validated['years_of_experience'],
-            'credential_document' => $path,
-            'status' => 'inactive',
+            'credential_document' => 'required|file|mimes:pdf,jpg,png|max:2048',
         ]);
 
-        $token = $doctor->createToken('doctor_token')->plainTextToken;
+        return DB::transaction(function () use ($validated, $request) {
+            $path = $request->file('credential_document')->store('documents', 'public');
 
-        return response()->json([
-            'message' => 'تم تسجيل الطبيب بنجاح, بانتظار التفعيل, ستصلك رسالة عبر الايميل الخاص بك لضمان التفعيل',
-            'access_token' => $token,
-            'doctor' => $doctor,
-        ], 201);
+            // 1. إنشاء المستخدم بدور 'doctor'
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'phone' => $validated['phone'],
+                'role' => 'doctor',
+            ]);
+
+            // 2. إنشاء البروفايل الخاص بالطبيب بحالة inactive
+            $user->doctorProfile()->create([
+                'specialty' => $validated['specialty'],
+                'years_of_experience' => $validated['years_of_experience'],
+                'credential_document' => $path,
+                'status' => 'inactive',
+            ]);
+
+            $token = $user->createToken('doctor_token')->plainTextToken;
+
+            return response()->json([
+                'message' => 'تم تسجيل الطبيب بنجاح, بانتظار التفعيل',
+                'access_token' => $token,
+                'user' => $user->load('doctorProfile'),
+            ], 201);
+        });
     }
 
     public function login(Request $request)
     {
         $request->validate(['email' => 'required|email', 'password' => 'required']);
 
-        $doctor = Doctor::where('email', $request->email)->first();
+        $user = User::where('email', $request->email)->where('role', 'doctor')->first();
 
-        if (! $doctor || ! Hash::check($request->password, $doctor->password)) {
+        if (! $user || ! Hash::check($request->password, $user->password)) {
             return response()->json(['message' => 'بيانات الدخول غير صحيحة'], 401);
         }
 
-        // التحقق من حالة التفعيل
-        if ($doctor->status !== 'active') {
+        // التحقق من حالة التفعيل داخل البروفايل
+        if ($user->doctorProfile->status !== 'active') {
             return response()->json(['message' => 'حسابك بانتظار موافقة الإدارة'], 403);
         }
 
         return response()->json([
-            'access_token' => $doctor->createToken('doctor_token')->plainTextToken,
+            'access_token' => $user->createToken('doctor_token')->plainTextToken,
             'token_type' => 'Bearer',
-            'user' => [
-                'id' => $doctor->id,
-                'name' => $doctor->name,
-                'email' => $doctor->email,
-                'role' => 'doctor',
-            ],
+            'user' => $user,
         ]);
     }
 
     public function forgotPassword(Request $request)
     {
-        $request->validate(['email' => 'required|email|exists:doctors,email']);
+        $request->validate(['email' => 'required|email|exists:users,email']);
 
-        $doctor = Doctor::where('email', $request->email)->first();
+        $user = User::where('email', $request->email)->where('role', 'doctor')->first();
 
-        // 1. توليد كود عشوائي من 5 أرقام
-        $otp = rand(10000, 99999);
+        $otp = random_int(10000, 99999);
+        Cache::put('otp_doctor_'.$user->email, $otp, now()->addMinutes(10));
 
-         Cache::put('otp_'.$doctor->email, $otp, now()->addMinutes(10));
-
-         NotificationService::send('password_reset', $doctor, ['otp' => $otp]);
+        NotificationService::send('password_reset', $user, ['otp' => $otp]);
 
         return response()->json(['message' => 'تم إرسال رمز التحقق إلى بريدك الإلكتروني']);
     }
@@ -98,25 +94,22 @@ class DoctorAuthController extends Controller
     public function resetPassword(Request $request)
     {
         $request->validate([
-            'email' => 'required|email|exists:doctors,email',
-            'token' => 'required|numeric', // هنا التوكين هو كود الـ 5 أرقام
+            'email' => 'required|email|exists:users,email',
+            'token' => 'required|numeric',
             'password' => 'required|confirmed|min:8',
         ]);
 
-        $email = $request->email;
-        $otp = $request->token;
+        $storedOtp = Cache::get('otp_doctor_'.$request->email);
 
-         $storedOtp = Cache::get('otp_'.$email);
-
-        if (! $storedOtp || (int) $storedOtp !== (int) $otp) {
+        if (! $storedOtp || (int) $storedOtp !== (int) $request->token) {
             return response()->json(['message' => 'الكود غير صحيح أو انتهت صلاحيته'], 400);
         }
 
-         $doctor = Doctor::where('email', $email)->first();
-        $doctor->password = Hash::make($request->password);
-        $doctor->save();
+        $user = User::where('email', $request->email)->first();
+        $user->password = Hash::make($request->password);
+        $user->save();
 
-         Cache::forget('otp_'.$email);
+        Cache::forget('otp_doctor_'.$request->email);
 
         return response()->json(['message' => 'تم تغيير كلمة السر بنجاح'], 200);
     }

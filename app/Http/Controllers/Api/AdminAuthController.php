@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Admin;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -16,18 +16,18 @@ class AdminAuthController extends Controller
             'password' => 'required',
         ]);
 
-        $admin = Admin::where('email', $request->email)->first();
+        $admin = User::where('email', $request->email)
+            ->where('role', 'admin')
+            ->first();
 
-        if (! $admin || ! Hash::check($request->password, $admin->password)) {
-            return response()->json(['message' => 'بيانات الأدمن غير صحيحة'], 401);
+         if (! $admin || ! Hash::check($request->password, $admin->password)) {
+            return response()->json(['message' => 'بيانات الدخول غير صحيحة'], 401);
         }
 
         return response()->json([
             'access_token' => $admin->createToken('admin_token')->plainTextToken,
             'token_type' => 'Bearer',
-            'admin' => $admin,
+            'user' => $admin,
         ]);
     }
-
-    
 }

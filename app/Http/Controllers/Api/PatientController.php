@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Broadcast;
 use App\Models\MedicalRecord;
-use App\Models\Patient;
+use App\Models\User;
 use App\Models\PatientProfile;
 use Illuminate\Http\Request;
 
@@ -13,21 +13,20 @@ class PatientController extends Controller
 {
     public function getAllPatients()
     {
-        // جلب جميع الأدمنز (يفضل دائماً عدم إرجاع كلمة السر)
-        $admins = Patient::select('id', 'name', 'email', 'created_at')->get();
+        $patients = User::where('role', 'patient')
+            ->select('id', 'name', 'email', 'created_at')
+            ->get();
 
         return response()->json([
             'status' => true,
             'message' => 'تم جلب قائمة المرضى بنجاح',
-            'data' => $admins,
+            'data' => $patients,
         ], 200);
     }
 
- 
     public function profile(Request $request)
     {
-        // نستخدم load لتحميل العلاقة مع المريض في نفس الاستعلام
-        $patient = $request->user()->load('profile');
+        $patient = $request->user()->load('patientProfile');
 
         return response()->json([
             'message' => 'بيانات المريض الشخصية والطبية',
@@ -35,10 +34,8 @@ class PatientController extends Controller
         ], 200);
     }
 
-   
     public function updateProfile(Request $request)
     {
-
         $validated = $request->validate([
             'blood_type' => 'nullable|in:A+,A-,B+,B-,AB+,AB-,O+,O-',
             'weight_kg' => 'nullable|numeric|min:0',
@@ -53,27 +50,21 @@ class PatientController extends Controller
             'emergency_contact_phone' => 'nullable|string',
         ]);
 
-        auth()->user()->profile()->update($validated);
+        auth()->user()->patientProfile()->updateOrCreate(
+            ['user_id' => auth()->id()],
+            $validated
+        );
 
         return response()->json([
             'message' => 'تم تحديث الملف الطبي بنجاح',
-            'profile' => auth()->user()->profile,
+            'profile' => auth()->user()->patientProfile()->first(),
         ]);
     }
 
     public function getMedicalProfile(Request $request)
     {
-        // نستخدم firstOrCreate لضمان وجود بروفايل دائماً
         $profile = PatientProfile::firstOrCreate(
-            ['patient_id' => $request->user()->id],  
-            [ 
-                'blood_type' => null,
-                'weight_kg' => 0,
-                'height_cm' => 0,
-                'is_diabetic' => false,
-                'is_hypertensive' => false,
-                'is_smoker' => false,
-            ]
+            ['user_id' => $request->user()->id]
         );
 
         return response()->json([
@@ -82,13 +73,11 @@ class PatientController extends Controller
         ], 200);
     }
 
-    // عرض كل السجلات الطبية للمريض
     public function myMedicalRecords(Request $request)
     {
-        // جلب كل السجلات الطبية مع بيانات الطبيب الذي كتبها
         $records = MedicalRecord::where('patient_id', $request->user()->id)
             ->with(['doctor:id,name', 'appointment:id,scheduled_at'])
-            ->latest() // الأحدث أولاً
+            ->latest()
             ->get();
 
         return response()->json(['data' => $records]);
@@ -96,7 +85,6 @@ class PatientController extends Controller
 
     public function getBroadcasts()
     {
-        // جلب الرسائل الموجهة للجميع أو للمرضى فقط
         $broadcasts = Broadcast::whereIn('target', ['all', 'patients'])
             ->latest()
             ->get();

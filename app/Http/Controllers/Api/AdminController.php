@@ -3,9 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Admin;
+use App\Models\User;
 use App\Models\Broadcast;
-use App\Models\Doctor;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -14,7 +13,10 @@ class AdminController extends Controller
 {
     public function getAllAdmins()
     {
-         $admins = Admin::select('id', 'name', 'email', 'created_at')->get();
+        // جلب جميع المستخدمين ذوي الدور 'admin'
+        $admins = User::where('role', 'admin')
+            ->select('id', 'name', 'email', 'created_at')
+            ->get();
 
         return response()->json([
             'status' => true,
@@ -23,10 +25,15 @@ class AdminController extends Controller
         ], 200);
     }
 
-    // 1. عرض قائمة الأطباء الذين ينتظرون التفعيل (حالتهم inactive)
+    // 1. عرض قائمة الأطباء الذين ينتظرون التفعيل (حالة الـ profile الخاصة بهم inactive)
     public function showPending()
     {
-        $pendingDoctors = Doctor::where('status', 'inactive')->get();
+        $pendingDoctors = User::where('role', 'doctor')
+            ->whereHas('doctorProfile', function ($query) {
+                $query->where('status', 'inactive');
+            })
+            ->with('doctorProfile')
+            ->get();
 
         if ($pendingDoctors->isEmpty()) {
             return response()->json(['message' => 'لا يوجد أطباء بانتظار التفعيل حالياً'], 200);
@@ -41,31 +48,27 @@ class AdminController extends Controller
     // 2. تفعيل حساب الطبيب
     public function approveDoctor($id)
     {
-        $doctor = Doctor::find($id);
+        $doctor = User::where('role', 'doctor')->findOrFail($id);
 
-        if (! $doctor) {
-            return response()->json(['message' => 'الطبيب غير موجود'], 404);
-        }
-
-        // تحديث الحالة إلى active
-        $doctor->update(['status' => 'active']);
+        // تحديث حالة الطبيب في الـ Profile
+        $doctor->doctorProfile()->update(['status' => 'active']);
+        
         NotificationService::send('doctor_approved', $doctor, ['name' => $doctor->name]);
 
         return response()->json([
-            'message' => 'تم تفعيل حساب الطبيب '.$doctor->name.' بنجاح',
+            'message' => 'تم تفعيل حساب الطبيب ' . $doctor->name . ' بنجاح',
         ], 200);
     }
 
     // 3. رفض الطلب وحذف الطبيب
     public function rejectDoctor($id)
     {
-        $doctor = Doctor::find($id);
+        $doctor = User::where('role', 'doctor')->findOrFail($id);
 
-        if (! $doctor) {
-            return response()->json(['message' => 'الطبيب غير موجود'], 404);
+        // حذف ملفات الشهادات من الـ profile إذا كانت موجودة
+        if ($doctor->doctorProfile && $doctor->doctorProfile->credential_document) {
+            Storage::delete($doctor->doctorProfile->credential_document);
         }
-
-        Storage::delete($doctor->credential_document);
 
         $doctor->delete();
 
@@ -78,9 +81,8 @@ class AdminController extends Controller
     {
         $request->validate(['message' => 'required', 'target' => 'required']);
 
-         $broadcast = Broadcast::create($request->all());
+        $broadcast = Broadcast::create($request->all());
 
- 
         return response()->json(['message' => 'تم الإرسال والحفظ', 'data' => $broadcast]);
     }
 

@@ -2,58 +2,44 @@
 
 namespace Database\Seeders;
 
-use App\Models\{Admin, Doctor, Patient, Appointment, PatientProfile, Conversation, Message, MedicalRecord};
+use App\Models\Appointment;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. الأدمن
-        Admin::create(['name' => 'Super Admin', 'email' => 'admin@carelink.com', 'password' => bcrypt('password123')]);
+        // 1. إنشاء الأدمن
+        User::factory()->admin()->create();
 
-        // 2. الأطباء والمرضى
-        $doctors = Doctor::factory()->count(5)->create();
-        $patients = Patient::factory()->count(10)->create()->each(function ($patient) {
-            PatientProfile::create([
-                'patient_id' => $patient->id,
-                'blood_type' => fake()->randomElement(['A+', 'O+', 'B+', 'AB+']),
-            ]);
-        });
+        $doctors = User::factory()->doctor()->count(5)->create();
+        $patients = User::factory()->count(10)->create();
+        // 2. إنشاء الأطباء والمرضى
+        $doctors->each(fn ($d) => $d->doctorProfile()->create([
+            'status' => 'active',
+            'specialty' => 'Cardiology',
+            'clinic_address' => 'Gaza, Main Street',
+            'date_of_birth' => '1990-01-01', // أضف هذا الحقل المفقود
+            'gender' => 'male',   
+            // وأضف هذا الحقل أيضاً
+        ]));
 
-        // 3. المواعيد
-        foreach (range(1, 15) as $i) {
+        $patients->each(fn ($p) => $p->patientProfile()->create([
+            'blood_type' => 'O+',
+            // أضف أي حقول أخرى إجبارية في جدول patient_profiles هنا
+        ]));
+        // 3. إنشاء البروفايلات المرتبطة
+        $doctors->each(fn ($d) => $d->doctorProfile()->create(['status' => 'active', 'specialty' => 'Cardiology']));
+        $patients->each(fn ($p) => $p->patientProfile()->create(['blood_type' => 'O+']));
+
+        // 4. المواعيد والسجلات (استخدم user_id الآن)
+        foreach ($patients as $patient) {
             $appointment = Appointment::create([
                 'doctor_id' => $doctors->random()->id,
-                'patient_id' => $patients->random()->id,
-                'scheduled_at' => fake()->dateTimeBetween('now', '+1 month'),
-                'type' => 'in_person',
+                'patient_id' => $patient->id,
+                'scheduled_at' => now()->addDays(rand(1, 10)),
                 'status' => 'pending',
-            ]);
-
-            // 4. السجلات الطبية (بناءً على مواعيد مكتملة عشوائياً)
-            if ($i % 2 == 0) {
-                MedicalRecord::create([
-                    'patient_id' => $appointment->patient_id,
-                    'doctor_id' => $appointment->doctor_id,
-                    'appointment_id' => $appointment->id,
-                    'record_type' => 'diagnosis',
-                    'diagnosis' => 'تشخيص مبدئي: حالة مستقرة',
-                ]);
-            }
-        }
-
-        // 5. المحادثات والرسائل
-        foreach ($doctors as $doctor) {
-            $conversation = Conversation::create([
-                'doctor_id' => $doctor->id,
-                'patient_id' => $patients->random()->id,
-            ]);
-
-            Message::create([
-                'conversation_id' => $conversation->id,
-                'sender_type' => 'patient',
-                'body' => 'مرحباً دكتور، هل يمكنني الاستفسار عن التحاليل؟',
             ]);
         }
     }

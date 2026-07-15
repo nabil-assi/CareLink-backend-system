@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Patient;
+use App\Models\User;
+use App\Models\PatientProfile;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class PatientAuthController extends Controller
 {
@@ -15,36 +17,35 @@ class PatientAuthController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:patients',
-            'national_id' => 'required|string|min:9|max:9|unique:patients',
+            'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8',
             'phone' => 'required|string',
-            'date_of_birth' => 'required|date',
-            'address' => 'required|string',
-            'gender' => 'required|in:male,female',
+            // الحقول الأخرى التي كانت في الـ patient القديم (مثل الهوية)
+            // يفضل وضعها في بروفايل أو جدول مستخدمين موسع
+            'national_id' => 'required|string|unique:users', 
         ]);
 
-        // 1. إنشاء المريض
-        $patient = Patient::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'national_id' => $validated['national_id'],
-            'password' => Hash::make($validated['password']),
-            'phone' => $validated['phone'],
-            'date_of_birth' => $validated['date_of_birth'],
-            'address' => $validated['address'],
-            'gender' => $validated['gender'],
-        ]);
+        return DB::transaction(function () use ($validated) {
+            // 1. إنشاء المستخدم بدور مريض
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'phone' => $validated['phone'],
+                'role' => 'patient', 
+            ]);
 
-        $patient->profile()->create([]);
+            // 2. إنشاء البروفايل الطبي المرتبط
+            $user->patientProfile()->create();
 
-        $token = $patient->createToken('patient_token')->plainTextToken;
+            $token = $user->createToken('patient_token')->plainTextToken;
 
-        return response()->json([
-            'message' => 'تم تسجيل المريض بنجاح',
-            'access_token' => $token,
-            'patient' => $patient->load('profile'),
-        ], 201);
+            return response()->json([
+                'message' => 'تم تسجيل المريض بنجاح',
+                'access_token' => $token,
+                'user' => $user->load('patientProfile'),
+            ], 201);
+        });
     }
 
     public function updateProfile(Request $request)
@@ -63,11 +64,11 @@ class PatientAuthController extends Controller
             'emergency_contact_phone' => 'nullable|string',
         ]);
 
-        auth()->user()->profile()->update($validated);
+        auth()->user()->patientProfile()->update($validated);
 
         return response()->json([
             'message' => 'تم تحديث الملف الطبي بنجاح',
-            'profile' => auth()->user()->profile,
+            'profile' => auth()->user()->patientProfile,
         ]);
     }
 
@@ -75,38 +76,29 @@ class PatientAuthController extends Controller
     {
         $request->validate(['email' => 'required|email', 'password' => 'required']);
 
-        $patient = Patient::where('email', $request->email)->first();
+        $user = User::where('email', $request->email)->where('role', 'patient')->first();
 
-        if (! $patient || ! Hash::check($request->password, $patient->password)) {
+        if (! $user || ! Hash::check($request->password, $user->password)) {
             return response()->json(['message' => 'بيانات الدخول غير صحيحة'], 401);
         }
 
         return response()->json([
-            'access_token' => $patient->createToken('patient_token')->plainTextToken,
+            'access_token' => $user->createToken('patient_token')->plainTextToken,
             'token_type' => 'Bearer',
-            'user' => [
-                'id' => $patient->id,
-                'name' => $patient->name,
-                'email' => $patient->email,
-                'role' => 'patient',
-            ],
+            'user' => $user,
         ]);
     }
 
     public function forgotPassword(Request $request)
     {
-        $request->validate(['email' => 'required|email|exists:patients,email']);
+        $request->validate(['email' => 'required|email|exists:users,email']);
 
-        $patient = Patient::where('email', $request->email)->first();
+        $user = User::where('email', $request->email)->first();
 
-        // توليد كود عشوائي من 5 أرقام
         $otp = random_int(10000, 99999);
+        Cache::put('otp_patient_'.$user->email, $otp, now()->addMinutes(10));
 
-        // تخزين الكود في الكاش لمدة 10 دقائق
-        Cache::put('otp_patient_'.$patient->email, $otp, now()->addMinutes(10));
-
-        // إرسال الكود عبر الإيميل
-        NotificationService::send('password_reset', $patient, ['otp' => $otp]);
+        NotificationService::send('password_reset', $user, ['otp' => $otp]);
 
         return response()->json(['message' => 'تم إرسال رمز التحقق إلى بريدك الإلكتروني']);
     }
@@ -114,33 +106,22 @@ class PatientAuthController extends Controller
     public function resetPassword(Request $request)
     {
         $request->validate([
-            'email' => 'required|email|exists:patients,email',
-            'token' => 'required|numeric', // الكود الذي أرسله المستخدم
+            'email' => 'required|email|exists:users,email',
+            'token' => 'required|numeric',
             'password' => 'required|confirmed|min:8',
         ]);
 
-        $email = $request->email;
-        $otp = $request->token;
+        $storedOtp = Cache::get('otp_patient_'.$request->email);
 
-        // 1. استرجاع الكود من الكاش
-        $storedOtp = Cache::get('otp_patient_'.$email);
-
-       
-        // 2. التحقق من صحة الكود
-        // استبدل سطر التحقق بهذا:
-        if (! $storedOtp || (string) $storedOtp !== (string) $otp) {
-            // استخدم dd لرؤية القيم إذا استمرت المشكلة:
- 
+        if (! $storedOtp || (string) $storedOtp !== (string) $request->token) {
             return response()->json(['message' => 'الكود غير صحيح أو انتهت صلاحيته'], 400);
         }
 
-        // 3. تحديث كلمة السر للمريض
-        $patient = Patient::where('email', $email)->first();
-        $patient->password = Hash::make($request->password);
-        $patient->save();
+        $user = User::where('email', $request->email)->first();
+        $user->password = Hash::make($request->password);
+        $user->save();
 
-        // 4. حذف الكود من الكاش بعد الاستخدام
-        Cache::forget('otp_patient_'.$email);
+        Cache::forget('otp_patient_'.$request->email);
 
         return response()->json(['message' => 'تم تغيير كلمة السر بنجاح'], 200);
     }

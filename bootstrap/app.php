@@ -1,12 +1,11 @@
 <?php
 
-use App\Http\Middleware\EnsureUserIsAdmin;
-use App\Http\Middleware\EnsureUserIsDoctor;
-use App\Http\Middleware\EnsureUserIsPatient;
+use App\Http\Middleware\CheckRole;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -14,14 +13,26 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         channels: __DIR__.'/../routes/channels.php',
+        then: function () {
+            // تجميع كل المسارات تحت بادئة /api
+            Route::prefix('api')->middleware('api')->group(function () {
+                require base_path('routes/api/auth.php');
+                require base_path('routes/api/admin.php');
+                require base_path('routes/api/doctor.php');
+                require base_path('routes/api/patient.php');
+
+                // مسارات المحادثات محمية بـ sanctum
+                Route::middleware('auth:sanctum')->group(function () {
+                    Route::get('/conversations/{conversationId}/messages', [\App\Http\Controllers\Api\ChatController::class, 'getMessages']);
+                    Route::post('/conversations/{conversationId}/messages', [\App\Http\Controllers\Api\ChatController::class, 'sendMessage']);
+                });
+            });
+        },
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // هنا تضع كل إعدادات الميدل وير في مكان واحد
         $middleware->alias([
-            'admin' => EnsureUserIsAdmin::class,
-            'doctor' => EnsureUserIsDoctor::class,
-            'patient' => EnsureUserIsPatient::class,
+            'checkRole' => CheckRole::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

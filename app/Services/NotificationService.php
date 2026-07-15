@@ -3,35 +3,39 @@
 namespace App\Services;
 
 use App\Mail\GeneralNotificationMail;
-use App\Models\Doctor;
-use App\Models\Patient;
+use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 
 class NotificationService
 {
-    // الدالة المطلوبة للكونترولر (إرسال للجميع)
-    public static function sendToAll($title, $body)
-    {
-        // سأقوم بجلب جميع الأطباء والمرضى وإرسال إيميل لهم
-        $users = Doctor::all()->merge(Patient::all());
-
+  public static function sendToAll($title, $body)
+{
+    User::chunk(100, function ($users) use ($title, $body) {
         foreach ($users as $user) {
-            Mail::to($user->email)->send(new GeneralNotificationMail($title, $body, []));
+            // هنا الخطأ: كنت تمرر $body كقالب
+            // التصحيح: نمرر اسم القالب، ونرسل الـ body ضمن البيانات
+            Mail::to($user->email)->send(new GeneralNotificationMail(
+                $title, 
+                'emails.general', // اسم الملف
+                ['body' => $body] // البيانات
+            ));
         }
+    });
+}
+
+public static function sendToUser($userId, $modelClass, $title, $body)
+{
+    $user = User::find($userId);
+    if ($user) {
+        Mail::to($user->email)->send(new GeneralNotificationMail(
+            $title, 
+            'emails.general', // اسم الملف
+            ['body' => $body] // البيانات
+        ));
     }
-
-    // الدالة المطلوبة للكونترولر (إرسال لمستخدم محدد)
-    public static function sendToUser($userId, $userType, $title, $body)
-    {
-        $model = ($userType === 'doctor') ? Doctor::find($userId) : Patient::find($userId);
-
-        if ($model) {
-            Mail::to($model->email)->send(new GeneralNotificationMail($title, $body, []));
-        }
-    }
-
-    // دالتك الأصلية لإرسال إشعارات النظام (مثل التفعيل والرفض)
-    public static function send($type, $user, $data = [])
+}
+    // الدالة الأصلية لإشعارات النظام
+    public static function send($type, User $user, $data = [])
     {
         $subject = self::getSubject($type);
         $template = self::getTemplate($type);

@@ -2,15 +2,12 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory; // أضف هذا السطر
-class PatientProfile extends Model
-{    use HasFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model; // أضف هذا السطر
 
-    public function patient()
-    {
-        return $this->belongsTo(Patient::class);
-    }
+class PatientProfile extends Model
+{
+    use HasFactory;
 
     protected $fillable = [
         'patient_id', 'blood_type', 'weight_kg', 'height_cm',
@@ -18,5 +15,14 @@ class PatientProfile extends Model
         'chronic_diseases', 'current_medications',
         'emergency_contact_name', 'emergency_contact_phone',
     ];
+
+    public function patient()
+    {
+        return $this->belongsTo(Patient::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }
- 

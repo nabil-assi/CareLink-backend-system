@@ -12,7 +12,11 @@ class PostController extends Controller
     // عرض جميع المنشورات
     public function index()
     {
-        return response()->json(['data' => Post::with('admin:id,name')->latest()->get()], 200);
+        // تأكد من أن العلاقة في موديل Post اسمها user وليس admin
+        return response()->json([
+            'status' => true, 
+            'data' => Post::with('user:id,name')->latest()->get()
+        ], 200);
     }
 
     // إضافة منشور جديد
@@ -28,10 +32,14 @@ class PostController extends Controller
             $validated['image_path'] = $request->file('image')->store('posts', 'public');
         }
 
-        // إضافة الـ admin_id من المستخدم الحالي (الأدمن)
-        $post = auth()->user()->posts()->create($validated);
+        // استخدام العلاقة الموحدة (يجب أن يكون لديك علاقة posts في موديل User)
+        $post = $request->user()->posts()->create($validated);
 
-        return response()->json(['message' => 'تم نشر المقال بنجاح', 'data' => $post], 201);
+        return response()->json([
+            'status' => true,
+            'message' => 'تم نشر المقال بنجاح', 
+            'data' => $post
+        ], 201);
     }
 
     // حذف منشور
@@ -45,6 +53,9 @@ class PostController extends Controller
         
         $post->delete();
 
-        return response()->json(['message' => 'تم حذف المنشور بنجاح']);
+        return response()->json([
+            'status' => true,
+            'message' => 'تم حذف المنشور بنجاح'
+        ]);
     }
 }

@@ -13,10 +13,10 @@ return new class extends Migration
     {
         Schema::create('medical_records', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('patient_id')->constrained('patients')->onDelete('cascade');
-            $table->foreignId('doctor_id')->constrained('doctors')->onDelete('cascade');
-            $table->foreignId('appointment_id')->constrained('appointments')->onDelete('cascade');
+            $table->foreignId('patient_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('doctor_id')->constrained('users')->onDelete('cascade');
 
+            $table->foreignId('appointment_id')->constrained('appointments')->onDelete('cascade');
             $table->enum('record_type', ['diagnosis', 'lab_result', 'prescription', 'radiology']);
             $table->text('diagnosis')->nullable(); // التشخيص
             $table->text('notes')->nullable();     // ملاحظات إضافية
