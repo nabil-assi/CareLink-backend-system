@@ -15,7 +15,7 @@ class AppointmentController extends Controller
     {
         $validated = $request->validate([
             // التأكد أن المستخدم هو طبيب
-            'doctor_id' => 'required|exists:users,id', 
+            'doctor_id' => 'required|exists:users,id',
             'scheduled_at' => 'required|date|after:now',
             'type' => 'required|in:online,in_person',
             'description' => 'nullable|string',
@@ -26,14 +26,25 @@ class AppointmentController extends Controller
         if (!$doctor) {
             return response()->json(['message' => 'المعرف المختار ليس لطبيب'], 422);
         }
+        // التحقق أن الطبيب غير مشغول في نفس الوقت
+        $existingAppointment = Appointment::where('doctor_id', $validated['doctor_id'])
+            ->where('scheduled_at', $validated['scheduled_at'])
+            ->whereIn('status', ['pending', 'approved'])
+            ->exists();
+
+        if ($existingAppointment) {
+            return response()->json([
+                'message' => 'الطبيب لديه موعد آخر في هذا الوقت، يرجى اختيار وقت مختلف.'
+            ], 409);
+        }
 
         $appointment = $request->user()->appointments()->create([
             'doctor_id' => $validated['doctor_id'],
-            'patient_id' => $request->user()->id, // مأخوذ من auth
+            // 'patient_id' => $request->user()->id, // مأخوذ من auth
             'scheduled_at' => $validated['scheduled_at'],
             'type' => $validated['type'],
             'description' => $validated['description'],
-            'status' => 'pending',  
+            'status' => 'pending',
         ]);
 
         return response()->json(['message' => 'تم طلب الموعد بانتظار موافقة الطبيب', 'data' => $appointment], 201);
@@ -99,7 +110,7 @@ class AppointmentController extends Controller
 
     public function getMedicalRecord(Request $request, $appointmentId)
     {
-         $appointment = Appointment::where('id', $appointmentId)
+        $appointment = Appointment::where('id', $appointmentId)
             ->where('doctor_id', $request->user()->id)
             ->firstOrFail();
 
@@ -112,7 +123,7 @@ class AppointmentController extends Controller
         return response()->json(['data' => $record]);
     }
 
-     public function completeAppointment(Request $request, $id)
+    public function completeAppointment(Request $request, $id)
     {
         $appointment = Appointment::where('id', $id)
             ->where('doctor_id', $request->user()->id)
