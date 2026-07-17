@@ -58,4 +58,36 @@ class ReceptionController extends Controller
             'appointment' => $appointment,
         ], 201);
     }
+
+    // تعديل موعد (مثلاً تغيير التاريخ أو حالة الموعد)
+    public function updateAppointment(Request $request, $id)
+    {
+        $appointment = Appointment::findOrFail($id);
+
+        $validated = $request->validate([
+            'scheduled_at' => 'sometimes|date|after:now',
+            'status' => 'sometimes|in:pending,confirmed,completed,cancelled',
+            'description' => 'sometimes|string',
+        ]);
+
+        $appointment->update($validated);
+
+        return response()->json([
+            'message' => 'تم تحديث الموعد بنجاح',
+            'appointment' => $appointment
+        ]);
+    }
+
+    // حذف/إلغاء موعد
+    public function cancelAppointment($id)
+    {
+        $appointment = Appointment::findOrFail($id);
+        
+        // بدلاً من الحذف الفيزيائي، نغير الحالة لـ cancelled (أفضل في الأنظمة الطبية)
+        $appointment->update(['status' => 'cancelled']);
+
+        return response()->json([
+            'message' => 'تم إلغاء الموعد بنجاح'
+        ]);
+    }
 }
