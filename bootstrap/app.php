@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\ChatController;
 use App\Http\Middleware\CheckRole;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -23,8 +24,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
                 // مسارات المحادثات محمية بـ sanctum
                 Route::middleware('auth:sanctum')->group(function () {
-                    Route::get('/conversations/{conversationId}/messages', [\App\Http\Controllers\Api\ChatController::class, 'getMessages']);
-                    Route::post('/conversations/{conversationId}/messages', [\App\Http\Controllers\Api\ChatController::class, 'sendMessage']);
+                    Route::get('/conversations/{conversationId}/messages', [ChatController::class, 'getMessages']);
+                    Route::post('/conversations/{conversationId}/messages', [ChatController::class, 'sendMessage']);
                 });
             });
         },
