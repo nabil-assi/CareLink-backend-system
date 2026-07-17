@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\MedicalRecord;
+use App\Models\Prescription;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AppointmentController extends Controller
 {
@@ -23,7 +25,7 @@ class AppointmentController extends Controller
 
         // التحقق الإضافي أن الشخص المختار طبيب فعلاً
         $doctor = User::where('id', $validated['doctor_id'])->where('role', 'doctor')->first();
-        if (!$doctor) {
+        if (! $doctor) {
             return response()->json(['message' => 'المعرف المختار ليس لطبيب'], 422);
         }
         // التحقق أن الطبيب غير مشغول في نفس الوقت
@@ -34,7 +36,7 @@ class AppointmentController extends Controller
 
         if ($existingAppointment) {
             return response()->json([
-                'message' => 'الطبيب لديه موعد آخر في هذا الوقت، يرجى اختيار وقت مختلف.'
+                'message' => 'الطبيب لديه موعد آخر في هذا الوقت، يرجى اختيار وقت مختلف.',
             ], 409);
         }
 
@@ -132,5 +134,41 @@ class AppointmentController extends Controller
         $appointment->update(['status' => 'completed']);
 
         return response()->json(['message' => 'تم إنهاء الموعد بنجاح']);
+    }
+
+
+    // هنا ضفت الوصفة وما عملت كونترولر لحال
+    //لان الوصفة بتيجي بعد الموعد يعني بعد م يخلص الموعد الدكتور بيكتب الوصفة
+    // وبيبعتها بالمرة لكن بيزبط لو عملنا كونترولر جديد للوصفة, عادي
+    public function storePrescription(Request $request, $appointmentId)
+    {
+        // 1. التحقق من البيانات
+        $validated = $request->validate([
+            'diagnosis' => 'required|string',
+            'notes' => 'nullable|string',
+            'medicines' => 'required|array',
+            'medicines.*.medicine_name' => 'required|string',
+            'medicines.*.dosage' => 'required|string',
+            'medicines.*.duration' => 'required|string',
+        ]);
+
+        return DB::transaction(function () use ($validated, $appointmentId) {
+            // 2. إنشاء الوصفة
+            $prescription = Prescription::create([
+                'appointment_id' => $appointmentId,
+                'diagnosis' => $validated['diagnosis'],
+                'notes' => $validated['notes'],
+            ]);
+
+            // 3. إنشاء الأدوية المرتبطة
+            foreach ($validated['medicines'] as $med) {
+                $prescription->medicines()->create($med);
+            }
+
+            return response()->json([
+                'message' => 'تم حفظ الوصفة بنجاح',
+                'prescription' => $prescription->load('medicines'),
+            ], 201);
+        });
     }
 }

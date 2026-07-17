@@ -21,7 +21,6 @@ class DoctorAuthController extends Controller
             'password' => 'required|string|min:8',
             'phone' => 'required|string',
             'specialty' => 'required|string',
-            'years_of_experience' => 'required|integer',
             'credential_document' => 'required|file|mimes:pdf,jpg,png|max:2048',
         ]);
 
@@ -40,8 +39,7 @@ class DoctorAuthController extends Controller
             // 2. إنشاء البروفايل الخاص بالطبيب بحالة inactive
             $user->doctorProfile()->create([
                 'specialty' => $validated['specialty'],
-                'years_of_experience' => $validated['years_of_experience'],
-                'credential_document' => $path,
+                 'credential_document' => $path,
                 'status' => 'inactive',
             ]);
 

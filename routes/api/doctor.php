@@ -9,4 +9,6 @@ Route::middleware(['auth:sanctum', 'checkRole:doctor'])->prefix('doctor')->group
     Route::post('/appointments/{appointment}/medical-records', [AppointmentController::class, 'storeMedicalRecord']);
     Route::get('/appointments/{appointment}/medical-records', [AppointmentController::class, 'getMedicalRecord']);
     Route::get('/broadcasts', [DoctorController::class, 'getBroadcasts']);
+
+    Route::post('/appointments/{appointment}/prescriptions', [AppointmentController::class, 'storePrescription']);
 });
