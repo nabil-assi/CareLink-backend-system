@@ -1,18 +1,17 @@
 <?php
-namespace App\Http\Controllers\Api\Reception;
-
+namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\User;
 use Illuminate\Http\Request;
 
-class ReceptionController extends Controller
+class AppointmentController extends Controller
 {
     public function store(Request $request)
     {
         // 1. التحقق من البيانات (نستقبل patient_id من الاستقبال)
         $validated = $request->validate([
-            'patient_id' => 'required|exists:patients,id', 
+            'patient_id' => 'required|exists:patients,id',
             'doctor_id' => 'required|exists:users,id',
             'scheduled_at' => 'required|date|after:now',
             'type' => 'required|in:online,in_person',
@@ -21,9 +20,9 @@ class ReceptionController extends Controller
 
         // 2. التحقق أن الطبيب المختار هو طبيب فعلاً
         $doctor = User::where('id', $validated['doctor_id'])
-                      ->where('role', 'doctor')
-                      ->first();
-                      
+                ->where('role', 'doctor')
+                ->first();
+
         if (!$doctor) {
             return response()->json(['message' => 'المعرف المختار ليس لطبيب'], 422);
         }
@@ -47,11 +46,11 @@ class ReceptionController extends Controller
             'scheduled_at' => $validated['scheduled_at'],
             'type' => $validated['type'],
             'description' => $validated['description'],
-            'status' => 'approved', 
+            'status' => 'approved',
         ]);
 
         return response()->json([
-            'message' => 'تم حجز الموعد بنجاح من قبل الاستقبال', 
+            'message' => 'تم حجز الموعد بنجاح من قبل الاستقبال',
             'data' => $appointment
         ], 201);
     }
