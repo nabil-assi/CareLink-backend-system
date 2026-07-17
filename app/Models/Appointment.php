@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory; // أضف هذا السطر
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model; // أضف هذا السطر
+
 class Appointment extends Model
-{    use HasFactory;
+{
+    use HasFactory;
 
     protected $fillable = [
         'doctor_id', 'patient_id', 'scheduled_at', 'duration_minutes',
@@ -20,5 +22,11 @@ class Appointment extends Model
     public function doctor()
     {
         return $this->belongsTo(Doctor::class);
+    }
+
+    // هان ربطت الوصفة الطبية بجدول المواعيد بحيث كل موعد اله وصفه خاصة فيه
+    public function prescription(): HasOne
+    {
+        return $this->hasOne(Prescription::class);
     }
 }
