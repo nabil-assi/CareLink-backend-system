@@ -21,12 +21,9 @@ return Application::configure(basePath: dirname(__DIR__))
                 require base_path('routes/api/admin.php');
                 require base_path('routes/api/doctor.php');
                 require base_path('routes/api/patient.php');
+                require base_path('routes/api/reception.php');
 
-                // مسارات المحادثات محمية بـ sanctum
-                Route::middleware('auth:sanctum')->group(function () {
-                    Route::get('/conversations/{conversationId}/messages', [ChatController::class, 'getMessages']);
-                    Route::post('/conversations/{conversationId}/messages', [ChatController::class, 'sendMessage']);
-                });
+                
             });
         },
         health: '/up',

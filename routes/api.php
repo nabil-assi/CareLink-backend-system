@@ -11,13 +11,14 @@ use App\Http\Controllers\Api\DoctorAuthController;
 use App\Http\Controllers\Api\DoctorController;
 use App\Http\Controllers\Api\PatientAuthController;
 use App\Http\Controllers\Api\PatientController;
+use App\Http\Controllers\Api\Reception\ReceptionController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/conversations/{conversationId}/messages', [ChatController::class, 'getMessages']);
     Route::post('/conversations/{conversationId}/messages', [ChatController::class, 'sendMessage']);
 });
-
+Route::post('/reception/patients', [ReceptionController::class, 'registerPatient']);
 /**
  * *
  *
