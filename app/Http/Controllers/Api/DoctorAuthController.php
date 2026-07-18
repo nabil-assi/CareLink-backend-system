@@ -4,12 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\DoctorProfile;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class DoctorAuthController extends Controller
 {
@@ -39,7 +38,7 @@ class DoctorAuthController extends Controller
             // 2. إنشاء البروفايل الخاص بالطبيب بحالة inactive
             $user->doctorProfile()->create([
                 'specialty' => $validated['specialty'],
-                 'credential_document' => $path,
+                'credential_document' => $path,
                 'status' => 'inactive',
             ]);
 

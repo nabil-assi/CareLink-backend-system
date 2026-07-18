@@ -7,8 +7,7 @@ use App\Models\Appointment;
 use Illuminate\Http\Request;
 
 class AppointmentController extends Controller
-class AppointmentController extends Controller
-{
+ {
     public function index()
     {
         // الحصول على معرف الطبيب المسجل حالياً

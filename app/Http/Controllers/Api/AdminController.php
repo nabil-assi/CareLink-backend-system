@@ -8,9 +8,58 @@ use App\Models\Broadcast;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;  
 
 class AdminController extends Controller
 {
+
+
+public function store(Request $request)
+    {
+        // 1. تحقق صارم يتطابق مع الحقول المرسلة من React
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8',
+            'phone' => 'nullable|string|max:20',
+            'specialty' => 'nullable|string|max:255',
+            'national_id' => 'nullable|string|max:50',
+            'address' => 'nullable|string|max:500',
+            'gender' => 'required|in:male,female',
+        ]);
+
+        // استخدام Transaction لضمان عدم إنشاء مستخدم بدون بروفايل في حال حدوث خطأ
+        return DB::transaction(function () use ($validated) {
+            
+            // 2. إنشاء المستخدم الأساسي
+            $user = User::create([
+                'name' => $validated['name'], // تأكد أن اسم العمود في الداتا بيز name وليس full_name
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'phone' => $validated['phone'] ?? null,
+                'role' => 'doctor',
+            ]);
+
+            // 3. إنشاء البروفايل الخاص بالطبيب بحالة Active فوراً
+            $user->doctorProfile()->create([
+                'specialty' => $validated['specialty'] ?? 'غير محدد',
+                'national_id' => $validated['national_id'] ?? null,
+                'address' => $validated['address'] ?? null,
+                'gender' => $validated['gender'],
+                'status' => 'active', // مفعل تلقائياً لأن الأدمن من أضافه
+                // 'credential_document' => null, // تركناها فارغة ليقوم الطبيب برفعها لاحقاً
+            ]);
+
+            // لا ترجع أي Token هنا، فقط رسالة نجاح
+            return response()->json([
+                'status' => true,
+                'message' => 'تم إضافة الطبيب وتفعيله بنجاح',
+            ], 201);
+        });
+    }
+
+
     public function getAllAdmins()
     {
         // جلب جميع المستخدمين ذوي الدور 'admin'

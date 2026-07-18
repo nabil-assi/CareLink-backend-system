@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth:sanctum', 'checkRole:admin'])->prefix('admin')->group(function () {
 
     Route::get('/doctors', [DoctorController::class, 'index']);
+        Route::post('/doctors', [AdminController::class, 'store']);
+
     Route::get('/pending-doctors', [AdminController::class, 'showPending']);
     Route::patch('/approve-doctor/{id}', [AdminController::class, 'approveDoctor']);
     Route::delete('/reject-doctor/{id}', [AdminController::class, 'rejectDoctor']);

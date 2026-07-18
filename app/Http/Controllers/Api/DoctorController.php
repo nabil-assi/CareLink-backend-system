@@ -7,8 +7,9 @@ use App\Models\Broadcast;
 use App\Models\Conversation;
 use App\Models\User;
 use Illuminate\Http\Request;
-
-class DoctorController extends Controller
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;  
+ class DoctorController extends Controller
 {
     /**
      * عرض جميع الأطباء للوحة تحكم الأدمن
@@ -59,25 +60,25 @@ class DoctorController extends Controller
         $doctor = $request->user(); // الطبيب المسجل حالياً
 
         // تحميل البروفايل المرتبط به
-        $doctor->load('doctorProfile'); 
+        $doctor->load('doctorProfile');
 
         return response()->json([
             'status' => true,
-            'data' => $doctor
+            'data' => $doctor,
         ], 200);
     }
 
     /**
      * تحديث البروفايل الخاص بالطبيب
      */
-public function updateProfile(Request $request)
+    public function updateProfile(Request $request)
     {
         $user = $request->user();
 
         // 1. التحقق من البيانات (إضافة جميع الحقول المطلوبة)
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $user->id,
+            'email' => 'required|email|unique:users,email,'.$user->id,
             'phone' => 'nullable|string',
             'date_of_birth' => 'nullable|date',
             'address' => 'nullable|string',
@@ -108,7 +109,10 @@ public function updateProfile(Request $request)
 
         return response()->json([
             'status' => true,
-            'message' => 'تم تحديث البيانات بنجاح'
+            'message' => 'تم تحديث البيانات بنجاح',
         ], 200);
     }
-}
+
+
+
+    }
