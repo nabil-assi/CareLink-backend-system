@@ -3,8 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-// هان هاد الموديل عبارة عن موديل يحتوي على رقم الوصفة لكن فيها الادوية والجرعة والمدة هيك افضل من انو نحطهم كلهم ف جدول واحد 
+// هان هاد الموديل عبارة عن موديل يحتوي على رقم الوصفة لكن فيها الادوية والجرعة والمدة هيك افضل من انو نحطهم كلهم ف جدول واحد
 // عشان الاستدعاءات وهيلزمونا يعني
 class PrescriptionMedicine extends Model
 {

@@ -22,7 +22,7 @@ class PatientAuthController extends Controller
             'phone' => 'required|string',
             // الحقول الأخرى التي كانت في الـ patient القديم (مثل الهوية)
             // يفضل وضعها في بروفايل أو جدول مستخدمين موسع
-            'national_id' => 'required|string|unique:users', 
+            'national_id' => 'required|string|unique:users',
         ]);
 
         return DB::transaction(function () use ($validated) {
@@ -32,7 +32,8 @@ class PatientAuthController extends Controller
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
                 'phone' => $validated['phone'],
-                'role' => 'patient', 
+                'national_id' => $validated['national_id'],
+                'role' => 'patient',
             ]);
 
             // 2. إنشاء البروفايل الطبي المرتبط

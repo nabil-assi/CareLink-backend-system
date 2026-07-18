@@ -7,6 +7,7 @@ use App\Models\Appointment;
 use Illuminate\Http\Request;
 
 class AppointmentController extends Controller
+class AppointmentController extends Controller
 {
     public function index()
     {
@@ -65,3 +66,4 @@ class AppointmentController extends Controller
         return $this->hasOne(MedicalRecord::class);
     }
 }
+
