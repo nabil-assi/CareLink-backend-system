@@ -50,4 +50,65 @@ class DoctorController extends Controller
 
         return response()->json(['data' => $broadcasts], 200);
     }
+
+    /**
+     * عرض البروفايل الكامل للطبيب (مع تفاصيل التخصص)
+     */
+    public function getProfile(Request $request)
+    {
+        $doctor = $request->user(); // الطبيب المسجل حالياً
+
+        // تحميل البروفايل المرتبط به
+        $doctor->load('doctorProfile'); 
+
+        return response()->json([
+            'status' => true,
+            'data' => $doctor
+        ], 200);
+    }
+
+    /**
+     * تحديث البروفايل الخاص بالطبيب
+     */
+public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+
+        // 1. التحقق من البيانات (إضافة جميع الحقول المطلوبة)
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+            'phone' => 'nullable|string',
+            'date_of_birth' => 'nullable|date',
+            'address' => 'nullable|string',
+            'gender' => 'nullable|in:male,female',
+            'specialty' => 'nullable|string',
+            'national_id' => 'nullable|string',
+        ]);
+
+        // 2. تحديث جدول المستخدم (users)
+        $user->update([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'] ?? $user->phone,
+        ]);
+
+        // 3. تحديث جدول بروفايل الطبيب (doctor_profiles)
+        // نستخدم null coalescing (??) لضمان عدم إرسال null للقاعدة إذا لم تكن القيمة موجودة
+        $user->doctorProfile()->updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'date_of_birth' => $validated['date_of_birth'] ?? null,
+                'address' => $validated['address'] ?? null,
+                'gender' => $validated['gender'] ?? 'male',
+                'specialty' => $validated['specialty'] ?? 'غير محدد', // حل جذري لمشكلة الـ Null
+                'national_id' => $validated['national_id'] ?? null,
+            ]
+        );
+
+        return response()->json([
+            'status' => true,
+            'message' => 'تم تحديث البيانات بنجاح'
+        ], 200);
+    }
 }

@@ -3,7 +3,10 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\{DoctorController, AppointmentController};
 
 Route::middleware(['auth:sanctum', 'checkRole:doctor'])->prefix('doctor')->group(function () {
-    Route::get('/profile', [DoctorController::class, 'profile']);
+    Route::get('/profile', [DoctorController::class, 'getProfile']);
+    Route::put('/profile', [DoctorController::class, 'updateProfile']);
+
+
     Route::get('/appointments', [AppointmentController::class, 'index']);
     Route::patch('/appointments/{id}/cancel', [AppointmentController::class, 'cancel']);
     Route::post('/appointments/{appointment}/medical-records', [AppointmentController::class, 'storeMedicalRecord']);

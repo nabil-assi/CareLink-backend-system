@@ -1,58 +1,67 @@
 <?php
-namespace App\Http\Controllers\Api\Reception;
+
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
-use App\Models\User;
 use Illuminate\Http\Request;
 
-class ReceptionController extends Controller
+class AppointmentController extends Controller
 {
-    public function store(Request $request)
+    public function index()
     {
-        // 1. التحقق من البيانات (نستقبل patient_id من الاستقبال)
-        $validated = $request->validate([
-            'patient_id' => 'required|exists:patients,id', 
-            'doctor_id' => 'required|exists:users,id',
-            'scheduled_at' => 'required|date|after:now',
-            'type' => 'required|in:online,in_person',
-            'description' => 'nullable|string',
-        ]);
+        // الحصول على معرف الطبيب المسجل حالياً
+        $doctorId = auth()->id();
 
-        // 2. التحقق أن الطبيب المختار هو طبيب فعلاً
-        $doctor = User::where('id', $validated['doctor_id'])
-                      ->where('role', 'doctor')
-                      ->first();
-                      
-        if (!$doctor) {
-            return response()->json(['message' => 'المعرف المختار ليس لطبيب'], 422);
-        }
+        // جلب المواعيد الخاصة بهذا الطبيب فقط مع بيانات المريض
+        $appointments = Appointment::where('doctor_id', $doctorId)
+            ->with('patient') // جلب بيانات المريض المرتبط بالموعد
+            ->orderBy('scheduled_at', 'asc') // ترتيب المواعيد من الأقدم للأحدث
+            ->get();
 
-        // 3. التحقق من تضارب المواعيد
-        $existingAppointment = Appointment::where('doctor_id', $validated['doctor_id'])
-            ->where('scheduled_at', $validated['scheduled_at'])
-            ->whereIn('status', ['pending', 'approved'])
-            ->exists();
+        return response()->json([
+            'message' => 'تم استرجاع مواعيدك بنجاح',
+            'data' => $appointments,
+        ], 200);
+    }
 
-        if ($existingAppointment) {
-            return response()->json([
-                'message' => 'الطبيب لديه موعد آخر في هذا الوقت، يرجى اختيار وقت مختلف.',
-            ], 409);
-        }
+    public function cancel(Request $request, $id)
+    {
+        // 1. البحث عن الموعد
+        $appointment = Appointment::findOrFail($id);
 
-        // 4. إنشاء الموعد مباشرة (الحالة approved لأن موظف الاستقبال هو من يحجز)
-        $appointment = Appointment::create([
-            'patient_id' => $validated['patient_id'],
-            'doctor_id' => $validated['doctor_id'],
-            'scheduled_at' => $validated['scheduled_at'],
-            'type' => $validated['type'],
-            'description' => $validated['description'],
-            'status' => 'approved', 
+        // 2. اختيارياً: التحقق من أن المستخدم لديه صلاحية للإلغاء
+        // (مثلاً الطبيب أو موظف الاستقبال فقط)
+
+        // 3. تحديث الحالة
+        $appointment->update([
+            'status' => 'cancelled',
         ]);
 
         return response()->json([
-            'message' => 'تم حجز الموعد بنجاح من قبل الاستقبال', 
-            'data' => $appointment
-        ], 201);
+            'message' => 'تم إلغاء الموعد بنجاح',
+            'appointment' => $appointment,
+        ], 200);
+    }
+
+    public function getMedicalRecord($appointmentId)
+    {
+        // 1. البحث عن الموعد مع السجل الطبي التابع له
+        $appointment = Appointment::with('medicalRecord')->findOrFail($appointmentId);
+
+        // 2. التأكد من وجود سجل طبي للموعد
+        if (! $appointment->medicalRecord) {
+            return response()->json(['message' => 'لا يوجد سجل طبي لهذا الموعد'], 404);
+        }
+
+        return response()->json([
+            'message' => 'تم استرجاع السجل الطبي بنجاح',
+            'data' => $appointment->medicalRecord,
+        ], 200);
+    }
+
+    public function medicalRecord()
+    {
+        return $this->hasOne(MedicalRecord::class);
     }
 }
