@@ -4,7 +4,9 @@ use App\Http\Controllers\Api\Admin\AdController;
 use App\Http\Controllers\Api\Admin\NotificationController;
 use App\Http\Controllers\Api\Admin\PostController;
 use App\Http\Controllers\Api\AdminController;
+use App\Http\Controllers\Api\Admin\SettingController;
 use App\Http\Controllers\Api\DoctorController;
+use App\Http\Controllers\Api\PatientController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Admin\ArticleController;
 
@@ -29,9 +31,6 @@ Route::middleware(['auth:sanctum', 'checkRole:admin'])->prefix('admin')->group(f
     Route::post('/notifications/general', [NotificationController::class, 'sendGeneral']);
     Route::post('/notifications/user', [NotificationController::class, 'sendToUser']);
 
-    Route::get('/posts', [PostController::class, 'index']);
-    Route::post('/posts', [PostController::class, 'store']);
-    Route::delete('/posts/{id}', [PostController::class, 'destroy']);
     Route::patch('/posts/{id}/approve', [PostController::class, 'approve']);
 
     Route::post('/broadcast', [AdminController::class, 'sendBroadcast']);
@@ -41,4 +40,12 @@ Route::middleware(['auth:sanctum', 'checkRole:admin'])->prefix('admin')->group(f
     Route::post('/articles', [ArticleController::class, 'store']);
     Route::put('/articles/{id}', [ArticleController::class, 'update']);
     Route::delete('/articles/{id}', [ArticleController::class, 'destroy']);
+
+
+    Route::get('/settings', [SettingController::class, 'index']);
+Route::post('/settings', [SettingController::class, 'update']);
+
+Route::get('/', [AdminController::class, 'show']);
+    Route::put('/profile', [AdminController::class, 'updateProfile']);
+    Route::put('/password', [AdminController::class, 'updatePassword']);
 });

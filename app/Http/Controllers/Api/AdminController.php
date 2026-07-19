@@ -139,4 +139,44 @@ public function store(Request $request)
     {
         return response()->json(Broadcast::latest()->get());
     }
+
+    public function show(Request $request)
+    {
+        return response()->json($request->user());
+    }
+
+    // تحديث البيانات الشخصية
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'name'        => 'required|string|max:255',
+            'email'       => 'required|email|unique:users,email,' . $user->id,
+            'phone'       => 'required|string|max:20',
+            'national_id' => 'required|string|max:20',
+            'role'        => 'required|string',
+        ]);
+
+        $user->update($validated);
+
+        return response()->json(['message' => 'تم تحديث البيانات بنجاح']);
+    }
+
+    // تحديث كلمة المرور
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'current_password'      => 'required|current_password',
+            'password'              => ['required', 'confirmed', Password::defaults()],
+        ]);
+
+        $request->user()->update([
+            'password' => Hash::make($request->password),
+        ]);
+
+        return response()->json(['message' => 'تم تحديث كلمة المرور بنجاح']);
+    }
+
+    
 }

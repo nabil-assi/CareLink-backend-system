@@ -17,6 +17,16 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/conversations/{conversationId}/messages', [ChatController::class, 'getMessages']);
     Route::post('/conversations/{conversationId}/messages', [ChatController::class, 'sendMessage']);
+
+    Route::get('/admin/posts', [PostController::class, 'index']);
+    Route::post('/admin/posts', [PostController::class, 'store']);
+    Route::delete('/admin/posts/{id}', [PostController::class, 'destroy']);
+    Route::patch('/admin/posts/{id}/approve', [PostController::class, 'approve']);
+
+    Route::get('/admin/patients', [PatientController::class, 'getAllPatients']);
+   
+
+    Route::get('/admin/appointments', [AppointmentController::class, 'index']);
 });
 Route::post('/reception/patients', [ReceptionController::class, 'registerPatient']);
 /**
