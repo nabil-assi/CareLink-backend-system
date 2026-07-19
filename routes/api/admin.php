@@ -22,7 +22,7 @@ Route::middleware(['auth:sanctum', 'checkRole:admin'])->prefix('admin')->group(f
 
     Route::get('/ads', [AdController::class, 'index']);
     Route::post('/ads', [AdController::class, 'store']);
-    Route::post('/ads/{id}', [AdController::class, 'update']);
+    Route::put('/ads/{id}', [AdController::class, 'update']);
     Route::delete('/ads/{id}', [AdController::class, 'destroy']);
 
     Route::get('/notifications', [NotificationController::class, 'index']);
@@ -32,6 +32,7 @@ Route::middleware(['auth:sanctum', 'checkRole:admin'])->prefix('admin')->group(f
     Route::get('/posts', [PostController::class, 'index']);
     Route::post('/posts', [PostController::class, 'store']);
     Route::delete('/posts/{id}', [PostController::class, 'destroy']);
+    Route::patch('/posts/{id}/approve', [PostController::class, 'approve']);
 
     Route::post('/broadcast', [AdminController::class, 'sendBroadcast']);
     Route::get('/broadcasts', [AdminController::class, 'getAllBroadcasts']);

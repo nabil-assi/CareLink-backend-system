@@ -9,53 +9,64 @@ use Illuminate\Support\Facades\Storage;
 
 class PostController extends Controller
 {
-    // عرض جميع المنشورات
     public function index()
     {
-        // تأكد من أن العلاقة في موديل Post اسمها user وليس admin
-        return response()->json([
-            'status' => true, 
-            'data' => Post::with('user:id,name')->latest()->get()
-        ], 200);
+        // جلب كل المنشورات للأدمن (المقبولة والمعلقة)
+        // لا تستخدم where('is_approved', true) هنا، لأن الأدمن يحتاج لرؤية الكل!
+        $posts = Post::latest()->get();
+
+        return response()->json(['data' => $posts]);
     }
 
-    // إضافة منشور جديد
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'content' => 'required|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+        $request->validate([
+            'title' => 'required',
+            'content' => 'required',
+        ]);
+
+        // نستخدم auth()->id() لجلب الـ user_id للمستخدم الذي سجل الدخول
+        $post = Post::create([
+            'title' => $request->title,
+            'content' => $request->content,
+            'image_path' => $request->image_path,
+            'user_id' => auth()->id(),
+            'is_approved' => false, // نضمن أنها دائماً false عند الإضافة الجديدة
+        ]);
+
+        return response()->json(['message' => 'تم رفع المنشور بنجاح، بانتظار موافقة الإدارة'], 201);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $post = Post::findOrFail($id);
+        $data = $request->validate([
+            'title' => 'required',
+            'content' => 'required',
+            'image' => 'nullable|image|max:2048',
         ]);
 
         if ($request->hasFile('image')) {
-            $validated['image_path'] = $request->file('image')->store('posts', 'public');
+            $data['image'] = $request->file('image')->store('posts', 'public');
         }
 
-        // استخدام العلاقة الموحدة (يجب أن يكون لديك علاقة posts في موديل User)
-        $post = $request->user()->posts()->create($validated);
-
-        return response()->json([
-            'status' => true,
-            'message' => 'تم نشر المقال بنجاح', 
-            'data' => $post
-        ], 201);
+        $post->update($data);
+        return response()->json($post);
     }
 
-    // حذف منشور
     public function destroy($id)
     {
-        $post = Post::findOrFail($id);
-        
-        if ($post->image_path) {
-            Storage::disk('public')->delete($post->image_path);
-        }
-        
-        $post->delete();
+        Post::destroy($id);
+        return response()->json(['message' => 'Deleted']);
+    }
 
-        return response()->json([
-            'status' => true,
-            'message' => 'تم حذف المنشور بنجاح'
-        ]);
+    public function approve($id)
+    {
+        $post = Post::findOrFail($id);
+
+        // تحديث الحالة إلى true (مقبول)
+        $post->update(['is_approved' => true]);
+
+        return response()->json(['message' => 'تم قبول المنشور، أصبح الآن مرئياً للجمهور.']);
     }
 }
