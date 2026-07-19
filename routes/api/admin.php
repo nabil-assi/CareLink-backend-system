@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Admin\PostController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\DoctorController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\Admin\ArticleController;
 
 Route::middleware(['auth:sanctum', 'checkRole:admin'])->prefix('admin')->group(function () {
 
@@ -34,4 +35,9 @@ Route::middleware(['auth:sanctum', 'checkRole:admin'])->prefix('admin')->group(f
 
     Route::post('/broadcast', [AdminController::class, 'sendBroadcast']);
     Route::get('/broadcasts', [AdminController::class, 'getAllBroadcasts']);
+
+    Route::get('/articles', [ArticleController::class, 'index']);
+    Route::post('/articles', [ArticleController::class, 'store']);
+    Route::put('/articles/{id}', [ArticleController::class, 'update']);
+    Route::delete('/articles/{id}', [ArticleController::class, 'destroy']);
 });
