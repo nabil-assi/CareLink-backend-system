@@ -9,7 +9,7 @@ use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;  
+use Illuminate\Support\Facades\Hash;
 
 class AdminController extends Controller
 {
@@ -31,13 +31,14 @@ public function store(Request $request)
 
         // استخدام Transaction لضمان عدم إنشاء مستخدم بدون بروفايل في حال حدوث خطأ
         return DB::transaction(function () use ($validated) {
-            
+
             // 2. إنشاء المستخدم الأساسي
             $user = User::create([
                 'name' => $validated['name'], // تأكد أن اسم العمود في الداتا بيز name وليس full_name
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
                 'phone' => $validated['phone'] ?? null,
+                'national_id' => $validated['national_id'] ?? null,
                 'role' => 'doctor',
             ]);
 
@@ -101,7 +102,7 @@ public function store(Request $request)
 
         // تحديث حالة الطبيب في الـ Profile
         $doctor->doctorProfile()->update(['status' => 'active']);
-        
+
         NotificationService::send('doctor_approved', $doctor, ['name' => $doctor->name]);
 
         return response()->json([
@@ -178,5 +179,5 @@ public function store(Request $request)
         return response()->json(['message' => 'تم تحديث كلمة المرور بنجاح']);
     }
 
-    
+
 }
