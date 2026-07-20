@@ -145,19 +145,66 @@ class AppointmentController extends Controller
         ], 200);
     }
 
+    public function getAllMedicalRecords()
+    {
+        $doctorId = auth()->id();
+
+        $records = Appointment::where('doctor_id', $doctorId)
+            ->whereNotNull('diagnosis') // المواعيد التي تم تسجيل تشخيص لها فقط
+            ->with('patient')
+            ->orderBy('updated_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'message' => 'تم استرجاع السجلات الطبية بنجاح',
+            'data' => $records,
+        ], 200);
+    }
+
     public function getMedicalRecord($appointmentId)
     {
-        // 1. البحث عن الموعد مع السجل الطبي التابع له
-        $appointment = Appointment::with('medicalRecord')->findOrFail($appointmentId);
+        $doctorId = auth()->id();
 
-        // 2. التأكد من وجود سجل طبي للموعد
-        if (! $appointment->medicalRecord) {
-            return response()->json(['message' => 'لا يوجد سجل طبي لهذا الموعد'], 404);
-        }
+        $appointment = Appointment::where('id', $appointmentId)
+            ->where('doctor_id', $doctorId)
+            ->with('patient')
+            ->firstOrFail();
 
         return response()->json([
             'message' => 'تم استرجاع السجل الطبي بنجاح',
-            'data' => $appointment->medicalRecord,
+            'data' => [
+                'diagnosis' => $appointment->diagnosis,
+                'clinical_notes' => $appointment->clinical_notes,
+                'lab_tests' => $appointment->lab_tests,
+                'medications' => $appointment->medications,
+                'status' => $appointment->status,
+                'patient' => $appointment->patient,
+            ],
+        ], 200);
+    }
+
+    public function storeMedicalRecord(Request $request, $appointmentId)
+    {
+        $doctorId = auth()->id();
+
+        $appointment = Appointment::where('id', $appointmentId)
+            ->where('doctor_id', $doctorId)
+            ->firstOrFail();
+
+        $validated = $request->validate([
+            'diagnosis' => 'required|string',
+            'clinical_notes' => 'nullable|string',
+        ]);
+
+        $appointment->update([
+            'diagnosis' => $validated['diagnosis'],
+            'clinical_notes' => $validated['clinical_notes'] ?? null,
+            'status' => 'with_doctor',
+        ]);
+
+        return response()->json([
+            'message' => 'تم حفظ السجل الطبي بنجاح',
+            'data' => $appointment,
         ], 200);
     }
 
@@ -220,4 +267,58 @@ class AppointmentController extends Controller
             'data' => $appointment,
         ]);
     }
+
+    public function doctorPatients()
+{
+    $doctorId = auth()->id();
+
+    // جلب أIDs المرضى المرتبطين بمواعيد هذا الطبيب
+    $patientIds = Appointment::where('doctor_id', $doctorId)
+        ->pluck('patient_id')
+        ->unique();
+
+    // جلب بيانات هؤلاء المرضى
+    $patients = \App\Models\Patient::whereIn('id', $patientIds)->get();
+
+    return response()->json([
+        'message' => 'تم استرجاع قائمة المرضى بنجاح',
+        'data' => $patients,
+    ], 200);
+}
+
+public function doctorPatientDetail($id)
+{
+    $doctorId = auth()->id();
+
+    // التأكد أن المريض لديه موعد مع هذا الطبيب
+    $appointment = Appointment::where('doctor_id', $doctorId)
+        ->where('patient_id', $id)
+        ->first();
+
+    if (!$appointment) {
+        return response()->json(['message' => 'المريض غير موجود أو ليس لديك صلاحية لعرضه'], 404);
+    }
+
+    // جلب بيانات المريض الأساسية
+    $patient = \App\Models\Patient::findOrFail($id);
+
+    // جلب كل مواعيد هذا المريض مع هذا الطبيب
+    $patientAppointments = Appointment::where('doctor_id', $doctorId)
+        ->where('patient_id', $id)
+        ->orderBy('scheduled_at', 'desc')
+        ->get();
+
+    // إرسال البيانات مجتمعة
+    return response()->json([
+        'message' => 'تم استرجاع تفاصيل المريض بنجاح',
+        'data' => [
+            'id' => $patient->id,
+            'full_name' => $patient->full_name ?? $patient->name ?? 'مريض',
+            'phone' => $patient->phone,
+            'national_id' => $patient->national_id ?? null,
+            'blood_type' => $patient->blood_type ?? null,
+            'appointments' => $patientAppointments,
+        ],
+    ], 200);
+}
 }
