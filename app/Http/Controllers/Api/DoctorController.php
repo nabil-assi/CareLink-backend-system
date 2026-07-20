@@ -113,6 +113,28 @@ use Illuminate\Support\Facades\Hash;
         ], 200);
     }
 
+public function changePassword(Request $request)
+{
+    $request->validate([
+        'current_password' => 'required',
+        'new_password' => 'required|min:6',
+    ]);
 
+    $user = $request->user();
+
+    if (!Hash::check($request->current_password, $user->password)) {
+        throw ValidationException::withMessages([
+            'current_password' => ['كلمة المرور الحالية غير صحيحة.'],
+        ]);
+    }
+
+    $user->update([
+        'password' => Hash::make($request->new_password),
+    ]);
+
+    return response()->json([
+        'message' => 'تم تحديث كلمة المرور بنجاح',
+    ], 200);
+}
 
     }
