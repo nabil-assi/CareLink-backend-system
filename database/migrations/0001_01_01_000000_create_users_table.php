@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('password');
             $table->string('phone')->nullable();
             $table->string('national_id')->unique();
+            $table->boolean('status')->default(false);
             $table->string('role')->default('patient'); // admin, doctor, patient, reception, lab
             $table->rememberToken();
             $table->timestamps();

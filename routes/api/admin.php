@@ -1,19 +1,19 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\AdController;
+use App\Http\Controllers\Api\Admin\ArticleController;
 use App\Http\Controllers\Api\Admin\NotificationController;
 use App\Http\Controllers\Api\Admin\PostController;
-use App\Http\Controllers\Api\AdminController;
+use App\Http\Controllers\Api\Admin\StaffController;
 use App\Http\Controllers\Api\Admin\SettingController;
+use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\DoctorController;
-use App\Http\Controllers\Api\PatientController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\Admin\ArticleController;
 
 Route::middleware(['auth:sanctum', 'checkRole:admin'])->prefix('admin')->group(function () {
 
     Route::get('/doctors', [DoctorController::class, 'index']);
-        Route::post('/doctors', [AdminController::class, 'store']);
+    Route::post('/doctors', [AdminController::class, 'store']);
 
     Route::get('/pending-doctors', [AdminController::class, 'showPending']);
     Route::patch('/approve-doctor/{id}', [AdminController::class, 'approveDoctor']);
@@ -41,11 +41,17 @@ Route::middleware(['auth:sanctum', 'checkRole:admin'])->prefix('admin')->group(f
     Route::put('/articles/{id}', [ArticleController::class, 'update']);
     Route::delete('/articles/{id}', [ArticleController::class, 'destroy']);
 
-
     Route::get('/settings', [SettingController::class, 'index']);
-Route::post('/settings', [SettingController::class, 'update']);
+    Route::post('/settings', [SettingController::class, 'update']);
 
-Route::get('/', [AdminController::class, 'show']);
+    Route::get('/', [AdminController::class, 'show']);
     Route::put('/profile', [AdminController::class, 'updateProfile']);
     Route::put('/password', [AdminController::class, 'updatePassword']);
+
+    Route::get('/staff', [StaffController::class, 'index']);
+    Route::post('/staff', [StaffController::class, 'store']);
+    Route::put('/staff/{id}', [StaffController::class, 'update']);
+    Route::patch('/staff/{id}/status', [StaffController::class, 'updateStatus']);
+    Route::delete('/staff/{id}', [StaffController::class, 'destroy']);
+
 });
