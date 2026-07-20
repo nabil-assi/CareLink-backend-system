@@ -5,6 +5,9 @@ use App\Http\Controllers\Api\DoctorController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum', 'checkRole:doctor'])->prefix('doctor')->group(function () {
+    Route::get('/home-stats', [DoctorController::class, 'homeStats']);
+
+
     Route::get('/profile', [DoctorController::class, 'getProfile']);
     Route::put('/profile', [DoctorController::class, 'updateProfile']);
 

@@ -3,13 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Broadcast;
+use App\Models\Appointment;
+ use App\Models\Broadcast;
 use App\Models\Conversation;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;  
- class DoctorController extends Controller
+use Illuminate\Support\Facades\Hash;
+
+class DoctorController extends Controller
 {
     /**
      * عرض جميع الأطباء للوحة تحكم الأدمن
@@ -113,28 +114,57 @@ use Illuminate\Support\Facades\Hash;
         ], 200);
     }
 
-public function changePassword(Request $request)
-{
-    $request->validate([
-        'current_password' => 'required',
-        'new_password' => 'required|min:6',
-    ]);
-
-    $user = $request->user();
-
-    if (!Hash::check($request->current_password, $user->password)) {
-        throw ValidationException::withMessages([
-            'current_password' => ['كلمة المرور الحالية غير صحيحة.'],
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'new_password' => 'required|min:6',
         ]);
+
+        $user = $request->user();
+
+        if (! Hash::check($request->current_password, $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => ['كلمة المرور الحالية غير صحيحة.'],
+            ]);
+        }
+
+        $user->update([
+            'password' => Hash::make($request->new_password),
+        ]);
+
+        return response()->json([
+            'message' => 'تم تحديث كلمة المرور بنجاح',
+        ], 200);
     }
 
-    $user->update([
-        'password' => Hash::make($request->new_password),
-    ]);
+   public function homeStats()
+{
+    $doctorId = auth()->id();
+
+    // جلب المواعيد مع بيانات المريض الأساسية الموجودة في الجدول فعلياً
+    $appointments = Appointment::where('doctor_id', $doctorId)
+        ->with('patient')
+        ->orderBy('scheduled_at', 'asc')
+        ->get();
+
+    $formattedAppointments = $appointments->map(function ($app) {
+        $patient = $app->patient;
+
+        return [
+            'id' => $app->id,
+            'status' => $app->status,
+            'type' => $app->type,
+            'scheduled_at' => $app->scheduled_at,
+            'patient_name' => $patient->full_name ?? $patient->name ?? 'مريض',
+            'patient_phone' => $patient->phone ?? '—',
+            'patient_avatar' => $patient->image ?? null, // أو اجعلها null مباشرة إذا لم يكن هناك عمود صورة
+        ];
+    });
 
     return response()->json([
-        'message' => 'تم تحديث كلمة المرور بنجاح',
+        'message' => 'تم استرجاع بيانات الصفحة الرئيسية بنجاح',
+        'data' => $formattedAppointments,
     ], 200);
 }
-
-    }
+}
