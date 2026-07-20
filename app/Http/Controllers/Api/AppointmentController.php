@@ -7,7 +7,7 @@ use App\Models\Appointment;
 use Illuminate\Http\Request;
 
 class AppointmentController extends Controller
- {
+{
     public function index()
     {
         // الحصول على معرف الطبيب المسجل حالياً
@@ -23,6 +23,47 @@ class AppointmentController extends Controller
             'message' => 'تم استرجاع مواعيدك بنجاح',
             'data' => $appointments,
         ], 200);
+    }
+
+    public function show($id)
+    {
+        $doctorId = auth()->id();
+
+        $appointment = Appointment::where('id', $id)
+            ->where('doctor_id', $doctorId)
+            ->with('patient')
+            ->first();
+
+        if (! $appointment) {
+            return response()->json(['message' => 'الموعد غير موجود'], 404);
+        }
+
+        return response()->json([
+            'message' => 'تم استرجاع تفاصيل الموعد بنجاح',
+            'data' => $appointment,
+        ], 200);
+    }
+
+    public function saveDiagnosis(Request $request, $id)
+    {
+        $doctorId = auth()->id();
+        $appointment = Appointment::where('id', $id)->where('doctor_id', $doctorId)->firstOrFail();
+
+        $validated = $request->validate([
+            'diagnosis' => 'required|string',
+            'clinical_notes' => 'nullable|string',
+        ]);
+
+        $appointment->update([
+            'diagnosis' => $validated['diagnosis'],
+            'clinical_notes' => $validated['clinical_notes'] ?? null,
+            'status' => 'with_doctor',
+        ]);
+
+        return response()->json([
+            'message' => 'تم حفظ التشخيص بنجاح',
+            'data' => $appointment,
+        ]);
     }
 
     public function cancel(Request $request, $id)
@@ -64,5 +105,60 @@ class AppointmentController extends Controller
     {
         return $this->hasOne(MedicalRecord::class);
     }
-}
 
+    public function storeLabOrder(Request $request, $id)
+    {
+        $doctorId = auth()->id();
+        $appointment = Appointment::where('id', $id)->where('doctor_id', $doctorId)->firstOrFail();
+
+        $validated = $request->validate([
+            'tests' => 'required|string',
+        ]);
+
+        $appointment->update([
+            'lab_tests' => $validated['tests'],
+            'lab_status' => 'pending',
+            'status' => 'awaiting_lab',
+        ]);
+
+        return response()->json([
+            'message' => 'تم إرسال طلب التحاليل بنجاح',
+            'data' => $appointment,
+        ]);
+    }
+
+    public function storePrescription(Request $request, $id)
+    {
+        $doctorId = auth()->id();
+        $appointment = Appointment::where('id', $id)->where('doctor_id', $doctorId)->firstOrFail();
+
+        $validated = $request->validate([
+            'medications' => 'required|string',
+        ]);
+
+        $appointment->update([
+            'medications' => $validated['medications'],
+            'status' => 'awaiting_pharmacy',
+        ]);
+
+        return response()->json([
+            'message' => 'تم إرسال الوصفة الطبية بنجاح',
+            'data' => $appointment,
+        ]);
+    }
+
+    public function completeAppointment($id)
+    {
+        $doctorId = auth()->id();
+        $appointment = Appointment::where('id', $id)->where('doctor_id', $doctorId)->firstOrFail();
+
+        $appointment->update([
+            'status' => 'completed',
+        ]);
+
+        return response()->json([
+            'message' => 'تم إنهاء الزيارة بنجاح',
+            'data' => $appointment,
+        ]);
+    }
+}
