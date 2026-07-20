@@ -12,6 +12,8 @@ use App\Http\Controllers\Api\DoctorController;
 use App\Http\Controllers\Api\PatientAuthController;
 use App\Http\Controllers\Api\PatientController;
 use App\Http\Controllers\Api\Reception\ReceptionController;
+
+
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -24,11 +26,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/admin/posts/{id}/approve', [PostController::class, 'approve']);
 
     Route::get('/admin/patients', [PatientController::class, 'getAllPatients']);
-   
 
     Route::get('/admin/appointments', [AppointmentController::class, 'index']);
 });
 Route::post('/reception/patients', [ReceptionController::class, 'registerPatient']);
+
+
+
+
+
+
 /**
  * *
  *
