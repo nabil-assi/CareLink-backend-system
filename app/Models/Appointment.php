@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model; // أضف هذا السطر
 
 class Appointment extends Model
@@ -17,17 +19,21 @@ class Appointment extends Model
 
     public function patient()
     {
-        return $this->belongsTo(Patient::class);
+        return $this->belongsTo(User::class, 'patient_id');
     }
 
     public function doctor()
     {
-        return $this->belongsTo(Doctor::class);
+        return $this->belongsTo(User::class, 'doctor_id');
     }
 
     // هان ربطت الوصفة الطبية بجدول المواعيد بحيث كل موعد اله وصفه خاصة فيه
     public function prescription(): HasOne
     {
         return $this->hasOne(Prescription::class);
+    }
+    public function medicalRecord()
+    {
+        return $this->hasOne(MedicalRecord::class);
     }
 }

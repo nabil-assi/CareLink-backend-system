@@ -18,6 +18,7 @@ class AdController extends Controller
     // إضافة إعلان جديد
     public function store(Request $request)
     {
+        dd($_FILES);
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'image' => 'required|image|mimes:jpeg,png,jpg|max:2048',
@@ -31,7 +32,7 @@ class AdController extends Controller
         $ad = Ad::create($validated);
 
         return response()->json([
-            'message' => 'تم إضافة الإعلان بنجاح', 
+            'message' => 'تم إضافة الإعلان بنجاح',
             'data' => $ad
         ], 201);
     }
@@ -58,7 +59,7 @@ class AdController extends Controller
         $ad->update($validated);
 
         return response()->json([
-            'message' => 'تم تحديث الإعلان بنجاح', 
+            'message' => 'تم تحديث الإعلان بنجاح',
             'data' => $ad
         ]);
     }
@@ -71,7 +72,7 @@ class AdController extends Controller
         if ($ad->image_path) {
             Storage::disk('public')->delete($ad->image_path);
         }
-        
+
         $ad->delete();
 
         return response()->json(['message' => 'تم حذف الإعلان بنجاح']);

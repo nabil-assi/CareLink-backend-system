@@ -50,6 +50,8 @@ class PatientController extends Controller
             'emergency_contact_phone' => 'nullable|string',
         ]);
 
+
+
         auth()->user()->patientProfile()->updateOrCreate(
             ['user_id' => auth()->id()],
             $validated
@@ -58,6 +60,36 @@ class PatientController extends Controller
         return response()->json([
             'message' => 'تم تحديث الملف الطبي بنجاح',
             'profile' => auth()->user()->patientProfile()->first(),
+        ]);
+    }
+
+    public function updateAccount(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email,' . $request->user()->id,
+            'phone' => 'nullable|string|max:20',
+            'national_id' => 'nullable|string',
+            'birth_date' => 'nullable|date',
+            'gender' => 'nullable|string',
+            'address' => 'nullable|string|max:255',
+        ]);
+
+        $user = $request->user();
+
+        $user->update([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'],
+            'national_id' => $validated['national_id'],
+            'birth_date' => $validated['birth_date'],
+            'gender' => $validated['gender'],
+            'address' => $validated['address'],
+        ]);
+
+        return response()->json([
+            'message' => 'تم تحديث بيانات الحساب بنجاح',
+            'user' => $user,
         ]);
     }
 

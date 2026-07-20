@@ -8,22 +8,82 @@ use Illuminate\Http\Request;
 
 class AppointmentController extends Controller
 {
-    public function index()
+    public function store(Request $request)
     {
-        // الحصول على معرف الطبيب المسجل حالياً
-        $doctorId = auth()->id();
+        $validated = $request->validate([
+            'doctor_id'    => 'required|exists:users,id',
+            'scheduled_at' => 'required|date',
+        ]);
 
-        // جلب المواعيد الخاصة بهذا الطبيب فقط مع بيانات المريض
-        $appointments = Appointment::where('doctor_id', $doctorId)
-            ->with('patient') // جلب بيانات المريض المرتبط بالموعد
-            ->orderBy('scheduled_at', 'asc') // ترتيب المواعيد من الأقدم للأحدث
-            ->get();
+        // التحقق إذا كان الموعد محجوزاً مسبقاً
+        $exists = Appointment::where('doctor_id', $validated['doctor_id'])
+            ->where('scheduled_at', $validated['scheduled_at'])
+            ->whereIn('status', ['pending', 'scheduled'])
+            ->exists();
+
+        if ($exists) {
+            return response()->json([
+                'message' => 'هذا الموعد محجوز مسبقاً',
+            ], 409);
+        }
+
+        // إنشاء الموعد
+        $appointment = Appointment::create([
+            'patient_id'   => $request->user()->id,
+            'doctor_id'    => $validated['doctor_id'],
+            'scheduled_at' => $validated['scheduled_at'],
+            'status'       => 'pending',
+        ]);
+
+        return response()->json([
+            'message' => 'تم حجز الموعد بنجاح',
+            'data'    => $appointment,
+        ], 201);
+    }
+
+    public function index(Request $request)
+    {
+        //الطبيب سيحصل على مواعيده.
+        //المريض سيحصل على مواعيده.
+        $user = $request->user();
+
+        if ($user->role === 'doctor') {
+
+            $appointments = Appointment::where('doctor_id', $user->id)
+                ->with('patient')
+                ->orderBy('scheduled_at')
+                ->get();
+
+        } else {
+
+            $appointments = Appointment::where('patient_id', $user->id)
+                ->with('doctor')
+                ->orderBy('scheduled_at')
+                ->get();
+
+        }
 
         return response()->json([
             'message' => 'تم استرجاع مواعيدك بنجاح',
             'data' => $appointments,
-        ], 200);
+        ]);
     }
+    // public function index()
+    // {
+    //     // الحصول على معرف الطبيب المسجل حالياً
+    //     $doctorId = auth()->id();
+
+    //     // جلب المواعيد الخاصة بهذا الطبيب فقط مع بيانات المريض
+    //     $appointments = Appointment::where('doctor_id', $doctorId)
+    //         ->with('patient') // جلب بيانات المريض المرتبط بالموعد
+    //         ->orderBy('scheduled_at', 'asc') // ترتيب المواعيد من الأقدم للأحدث
+    //         ->get();
+
+    //     return response()->json([
+    //         'message' => 'تم استرجاع مواعيدك بنجاح',
+    //         'data' => $appointments,
+    //     ], 200);
+    // }
 
     public function show($id)
     {
@@ -101,10 +161,9 @@ class AppointmentController extends Controller
         ], 200);
     }
 
-    public function medicalRecord()
-    {
-        return $this->hasOne(MedicalRecord::class);
-    }
+
+
+
 
     public function storeLabOrder(Request $request, $id)
     {
