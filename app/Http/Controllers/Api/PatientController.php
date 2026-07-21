@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Appointment;
 use App\Models\Broadcast;
 use App\Models\MedicalRecord;
 use App\Models\User;
@@ -108,12 +109,16 @@ class PatientController extends Controller
 
     public function myMedicalRecords(Request $request)
     {
-        $records = MedicalRecord::where('patient_id', $request->user()->id)
-            ->with(['doctor:id,name', 'appointment:id,scheduled_at'])
+        $records = Appointment::where('patient_id', $request->user()->id)
+            ->where('status', 'completed')
+            ->with('doctor:id,name')
             ->latest()
             ->get();
 
-        return response()->json(['data' => $records]);
+        return response()->json([
+            'message' => 'تم استرجاع السجلات الطبية',
+            'data' => $records,
+        ]);
     }
 
     public function getBroadcasts()
