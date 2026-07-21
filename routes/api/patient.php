@@ -18,4 +18,6 @@ Route::middleware(['auth:sanctum', 'checkRole:patient'])->prefix('patient')->gro
     Route::get('/broadcasts', [PatientController::class, 'getBroadcasts']);
 
     Route::get('/doctors', [PatientController::class, 'doctors']);
+
+    Route::post('/profile-picture', [PatientController::class, 'updateProfilePicture']);
 });
