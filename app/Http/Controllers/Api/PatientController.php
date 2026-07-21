@@ -7,6 +7,7 @@ use App\Models\Broadcast;
 use App\Models\MedicalRecord;
 use App\Models\User;
 use App\Models\PatientProfile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 
 class PatientController extends Controller
@@ -123,4 +124,41 @@ class PatientController extends Controller
 
         return response()->json(['data' => $broadcasts], 200);
     }
+
+public function updateProfilePicture(Request $request)
+{
+    try {
+
+        $request->validate([
+            'profile_picture' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+        ]);
+
+        $user = $request->user();
+
+        if ($user->profile_picture) {
+            Storage::disk('public')->delete($user->profile_picture);
+        }
+
+        $path = $request->file('profile_picture')
+            ->store('profile_pictures', 'public');
+
+        $user->update([
+            'profile_picture' => $path,
+        ]);
+
+        return response()->json([
+            'message' => 'تم تحديث الصورة الشخصية',
+            'profile_picture' => asset('storage/' . $path),
+        ]);
+
+    } catch (\Throwable $e) {
+
+        return response()->json([
+            'message' => $e->getMessage(),
+            'line' => $e->getLine(),
+            'file' => $e->getFile(),
+        ], 500);
+
+    }
+}
 }

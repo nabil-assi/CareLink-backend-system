@@ -321,4 +321,46 @@ public function doctorPatientDetail($id)
         ],
     ], 200);
 }
+
+
+    public function reschedule(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'scheduled_at' => 'required|date',
+            'description' => 'nullable|string',
+        ]);
+
+        $appointment = Appointment::findOrFail($id);
+
+        // تأكد أن المريض هو صاحب الموعد
+        if ($appointment->patient_id != $request->user()->id) {
+            return response()->json([
+                'message' => 'غير مصرح لك بتعديل هذا الموعد'
+            ], 403);
+        }
+
+        // تأكد أن الوقت الجديد غير محجوز
+        $exists = Appointment::where('doctor_id', $appointment->doctor_id)
+            ->where('scheduled_at', $validated['scheduled_at'])
+            ->whereIn('status', ['pending', 'scheduled'])
+            ->where('id', '!=', $appointment->id)
+            ->exists();
+
+        if ($exists) {
+            return response()->json([
+                'message' => 'هذا الموعد محجوز مسبقاً'
+            ], 409);
+        }
+
+        $appointment->update([
+            'scheduled_at' => $validated['scheduled_at'],
+            'description' => $validated['description'] ?? null,
+            'status' => 'pending',
+        ]);
+
+        return response()->json([
+            'message' => 'تم تحديث الموعد بنجاح',
+            'data' => $appointment,
+        ]);
+    }
 }
