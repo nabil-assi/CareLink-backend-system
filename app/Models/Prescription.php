@@ -8,7 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Prescription extends Model
 {
-    protected $fillable = ['appointment_id', 'diagnosis', 'notes'];
+    protected $fillable = ['appointment_id', 'diagnosis', 'notes', 'status',
+        'dispensed_at'];
 
     // الوصفة تتبع موعد واحد
     public function appointment(): BelongsTo
