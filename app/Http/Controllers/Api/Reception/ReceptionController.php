@@ -103,7 +103,7 @@ class ReceptionController extends Controller
         return response()->json(['data' => $patients], 200);
     }
 
-   public function storePatient(Request $request)
+    public function storePatient(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255', // استقباله باسم name
@@ -128,7 +128,7 @@ class ReceptionController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'تم تسجيل المريض بنجاح', 
+            'message' => 'تم تسجيل المريض بنجاح',
             'data' => [
                 'id' => $patient->id,
                 'name' => $patient->full_name,
@@ -138,7 +138,7 @@ class ReceptionController extends Controller
                 'insuranceProvider' => $patient->insurance_provider,
                 'guardianId' => $patient->guardian_id,
                 'created_at' => $patient->created_at,
-            ]
+            ],
         ], 201);
     }
 
@@ -221,57 +221,114 @@ class ReceptionController extends Controller
         });
     }
 
-    // 1. جلب جدول المواعيد المحجوزة للطبيب في تاريخ معين
-    public function getDoctorSchedule(Request $request)
-    {
-        $request->validate([
-            'doctor_id' => 'required|exists:users,id',
-            'date' => 'required|date',
-        ]);
+ public function getDoctorSchedule(Request $request)
+{
+    $request->validate([
+        'doctor_id' => 'required|exists:users,id',
+        'date' => 'required|date',
+    ]);
 
-        $appointments = Appointment::where('doctor_id', $request->doctor_id)
-            ->whereDate('scheduled_at', $request->date)
-            ->with('patient:id,full_name')
-            ->get()
-            ->map(function ($apt) {
-                return [
-                    'id' => $apt.id,
-                    'time' => Carbon::parse($apt->scheduled_at)->format('h:i A'),
-                    'patient_name' => $apt->patient->full_name ?? 'مريض',
-                    'status' => $apt->status,
-                ];
-            });
+    $appointments = Appointment::where('doctor_id', $request->doctor_id)
+        ->whereDate('scheduled_at', $request->date)
+        ->whereIn('status', ['pending', 'confirmed', 'scheduled', 'checked_in', 'with_doctor'])
+        ->with('patient:id,name,full_name')
+        ->get()
+        ->map(function ($apt) {
+            return [
+                'id' => $apt->id,
+                'time' => Carbon::parse($apt->scheduled_at)->format('h:i A'),
+                'patient_name' => $apt->patient->full_name ?? $apt->patient->name ?? 'مريض',
+                'status' => $apt->status,
+                'type' => $apt->type,
+            ];
+        });
 
-        return response()->json(['data' => $appointments], 200);
-    }
+    return response()->json(['data' => $appointments], 200);
+}
 
     // 2. تخزين الموعد الجديد
     public function storeAppointment(Request $request)
     {
         $validated = $request->validate([
-            'patient_id' => 'required|exists:patients,id',
+            'patient_id' => 'required|exists:users,id', // بما أن المريض مستخدم بالنظام حسب الموديل
             'doctor_id' => 'required|exists:users,id',
             'date' => 'required|date',
             'time' => 'required|string',
-            'notes' => 'nullable|string',
             'type' => 'nullable|string',
+            'description' => 'nullable|string',
         ]);
 
-        $datetime = date('Y-m-d H:i:s', strtotime("{$validated['date']} {$validated['time']}"));
+        // دمج التاريخ والوقت في حقل scheduled_at المطلوب بالموديل
+        $scheduledAt = date('Y-m-d H:i:s', strtotime("{$validated['date']} {$validated['time']}"));
 
         $appointment = Appointment::create([
-            'patient_id' => $validated['patient_id'],
-            'doctor_id' => $validated['doctor_id'],
-            'scheduled_at' => $datetime,
-            'type' => $validated['type'] ?? 'in_person',
-            'notes' => $validated['notes'] ?? null,
-            'status' => 'scheduled',
-            'created_by' => 'reception',
-        ]);
+        'patient_id' => $validated['patient_id'],
+        'doctor_id' => $validated['doctor_id'],
+        'scheduled_at' => $scheduledAt,
+        'type' => $validated['type'] ?? 'in_person',
+        'status' => 'pending', // مطابقة للـ enum الموجود في جدولك
+        'description' => $validated['description'] ?? null,
+    ]);
 
         return response()->json([
             'message' => 'تم حجز الموعد بنجاح',
             'data' => $appointment,
         ], 201);
     }
+
+    public function getWaitingQueue(Request $request)
+{
+    $date = $request->input('date', Carbon::today()->toDateString());
+
+    $appointments = Appointment::whereDate('scheduled_at', $date)
+        // أضفنا 'pending' و 'confirmed' هنا لكي يتم جلبها وتظهر في القائمة
+        ->whereIn('status', ['pending', 'confirmed', 'scheduled', 'checked_in', 'with_doctor'])
+        ->with(['patient', 'doctor']) // تأكد من صحة علاقات الموديل لديك
+        ->orderBy('scheduled_at', 'asc')
+        ->get()
+        ->map(function ($apt, $index) {
+            return [
+                'id' => $apt->id,
+                'queueNumber' => $index + 1,
+                'patient_name' => $apt->patient->full_name ?? $apt->patient->name ?? 'مريض',
+                'doctor_name' => $apt->doctor->name ?? 'طبيب',
+                'time' => Carbon::parse($apt->scheduled_at)->format('h:i A'),
+                'status' => $apt->status,
+            ];
+        });
+
+    return response()->json([
+        'data' => $appointments
+    ], 200);
+}
+
+
+public function getAllAppointments(Request $request)
+{
+    // يمكنك إضافة فلترة اختيارية حسب التاريخ أو الطبيب أو الحالة إذا رغبت، أو جلب الكل مباشرة
+    $query = Appointment::with(['patient', 'doctor', 'prescription', 'medicalRecord']);
+
+    // فلترة اختياريّة حسب التاريخ إن تم إرساله
+    if ($request->has('date')) {
+        $query->whereDate('scheduled_at', $request->input('date'));
+    }
+
+    // فلترة اختياريّة حسب الطبيب إن تم إرساله
+    if ($request->has('doctor_id')) {
+        $query->where('doctor_id', $request->input('doctor_id'));
+    }
+
+    // فلترة اختياريّة حسب الحالة إن تم إرسالها
+    if ($request->has('status')) {
+        $query->where('status', $request->input('status'));
+    }
+
+    $appointments = $query->orderBy('scheduled_at', 'desc')->get();
+
+    return response()->json([
+        'message' => 'تم جلب جميع الحجوزات بنجاح',
+        'count' => $appointments->count(),
+        'data' => $appointments
+    ], 200);
+}
 }

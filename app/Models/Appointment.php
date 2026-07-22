@@ -3,19 +3,18 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\HasOne;
-use App\Models\User;
-use Illuminate\Database\Eloquent\Model; // أضف هذا السطر
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne; // أضف هذا السطر
 
 class Appointment extends Model
 {
     use HasFactory;
 
-  protected $fillable = [
-    'doctor_id', 'patient_id', 'scheduled_at', 'duration_minutes',
-    'type', 'status', 'description', 'fees', 'meeting_link', 'cancellation_reason',
-    'diagnosis', 'clinical_notes', 'lab_tests', 'lab_status', 'medications', // الحقول الجديدة
-];
+    protected $fillable = [
+        'doctor_id', 'patient_id', 'scheduled_at', 'duration_minutes',
+        'type', 'status', 'description', 'fees', 'meeting_link', 'cancellation_reason',
+        'diagnosis', 'clinical_notes', 'lab_tests', 'lab_status', 'medications', // الحقول الجديدة
+    ];
 
     public function patient()
     {
@@ -32,6 +31,7 @@ class Appointment extends Model
     {
         return $this->hasOne(Prescription::class);
     }
+
     public function medicalRecord()
     {
         return $this->hasOne(MedicalRecord::class);
