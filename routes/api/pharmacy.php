@@ -1,8 +1,9 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\PharmacyController;
 
-Route::middleware(['auth:sanctum', 'checkRole:patient'])->prefix('pharmacy')->group(function () {
+Route::middleware(['auth:sanctum', 'checkRole:pharmacy'])->prefix('pharmacy')->group(function () {
 
     Route::get('/prescriptions', [PharmacyController::class, 'index']);
     Route::post('/prescriptions/{id}/ready', [PharmacyController::class, 'markReady']);
