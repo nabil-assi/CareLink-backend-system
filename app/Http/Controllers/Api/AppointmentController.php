@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use Illuminate\Http\Request;
-
+use App\Models\LabOrder;
 class AppointmentController extends Controller
 {
     public function store(Request $request)
@@ -211,27 +211,33 @@ class AppointmentController extends Controller
 
 
 
+public function storeLabOrder(Request $request, $id)
+{
+    $request->validate([
+        'tests' => 'required|string',
+        'priority' => 'nullable|string',
+        'notes' => 'nullable|string',
+    ]);
 
-    public function storeLabOrder(Request $request, $id)
-    {
-        $doctorId = auth()->id();
-        $appointment = Appointment::where('id', $id)->where('doctor_id', $doctorId)->firstOrFail();
+    // يمكنك جلب الموعد لمعرفة المريض والطبيب المرتبطين به
+    // $appointment = Appointment::findOrFail($id);
 
-        $validated = $request->validate([
-            'tests' => 'required|string',
-        ]);
+    $labOrder = LabOrder::create([
+        'appointment_id' => $id, // أضف حقل appointment_id إذا لم يكن موجوداً في جدول lab_orders
+        'patient_id' => $request->patient_id, // أو جلبها من الموعد
+        'doctor_id' => auth()->id(),
+        'tests' => $request->tests,
+        'clinical_reason' => $request->notes ?? 'طلب فحص طبي من الطبيب المعالج',
+        'priority' => $request->priority ?? 'routine',
+        'status' => 'pending',
+    ]);
 
-        $appointment->update([
-            'lab_tests' => $validated['tests'],
-            'lab_status' => 'pending',
-            'status' => 'awaiting_lab',
-        ]);
-
-        return response()->json([
-            'message' => 'تم إرسال طلب التحاليل بنجاح',
-            'data' => $appointment,
-        ]);
-    }
+    return response()->json([
+        'status' => true,
+        'message' => 'تم إرسال طلب التحاليل بنجاح',
+        'data' => $labOrder
+    ], 201);
+}
 
     public function storePrescription(Request $request, $id)
     {

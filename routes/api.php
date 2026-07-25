@@ -15,6 +15,8 @@ use App\Http\Controllers\Api\PatientAuthController;
 use App\Http\Controllers\Api\PatientController;
 use App\Http\Controllers\Api\PharmacyController;
 use App\Http\Controllers\Api\OfferController;
+use App\Http\Controllers\Api\LabOrderController;
+
 
 use App\Http\Controllers\Api\Reception\ReceptionController;
 use Illuminate\Support\Facades\Route;
@@ -58,6 +60,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
 });
 Route::post('/reception/patients', [ReceptionController::class, 'registerPatient']);
+
+Route::prefix('laboratory')->group(function () {
+    Route::get('/orders', [LabOrderController::class, 'index']);
+    Route::post('/orders/{id}/start', [LabOrderController::class, 'start']);
+    Route::post('/orders/{id}/complete', [LabOrderController::class, 'complete']);
+    Route::post('/orders/{id}/redo', [LabOrderController::class, 'redo']);
+});
 
 /**
  * *
