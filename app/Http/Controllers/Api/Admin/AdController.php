@@ -18,7 +18,6 @@ class AdController extends Controller
     // إضافة إعلان جديد
     public function store(Request $request)
     {
-        dd($_FILES);
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'image' => 'required|image|mimes:jpeg,png,jpg|max:2048',
@@ -27,6 +26,8 @@ class AdController extends Controller
 
         if ($request->hasFile('image')) {
             $validated['image_path'] = $request->file('image')->store('ads', 'public');
+            // إذا كان اسم الحقل في جدول قاعدة البيانات لديك هو image بدلاً من image_path، استبدل السطر السابق بـ:
+            // $validated['image'] = $request->file('image')->store('ads', 'public');
         }
 
         $ad = Ad::create($validated);
@@ -49,7 +50,6 @@ class AdController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            // التحقق من وجود الصورة القديمة وحذفها
             if ($ad->image_path) {
                 Storage::disk('public')->delete($ad->image_path);
             }

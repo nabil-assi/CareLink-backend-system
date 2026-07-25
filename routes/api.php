@@ -7,13 +7,29 @@ use App\Http\Controllers\Api\AdminAuthController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\ChatController;
+use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\DoctorAuthController;
 use App\Http\Controllers\Api\DoctorController;
+use App\Http\Controllers\Api\LandingController;
 use App\Http\Controllers\Api\PatientAuthController;
 use App\Http\Controllers\Api\PatientController;
 use App\Http\Controllers\Api\PharmacyController;
+use App\Http\Controllers\Api\OfferController;
+
 use App\Http\Controllers\Api\Reception\ReceptionController;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/articles', [LandingController::class, 'getPublishedArticles']);
+Route::get('/articles/{slug}', [LandingController::class, 'showArticles']);
+Route::get('/home/doctors', [LandingController::class, 'getDoctors']);
+Route::post('/contact', [ContactController::class, 'store']);
+Route::get('/settings/contact', [ContactController::class, 'getContactSettings']); // اختياري لجلب بيانات التواصل ديناميكياً
+Route::get('/home/settings', [SettingController::class, 'index']);
+
+Route::get('/landing/ads', [AdController::class, 'index']);
+
+Route::get('/offers', [OfferController::class, 'index']);
+Route::post('/newsletter/subscribe', [OfferController::class, 'subscribe']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/conversations/{conversationId}/messages', [ChatController::class, 'getMessages']);
@@ -28,17 +44,17 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/admin/appointments', [AppointmentController::class, 'index']);
 
-    //Route::get('/pharmacy/prescriptions', [PharmacyController::class, 'index']);
-    //Route::post('/pharmacy/prescriptions/{id}/ready', [PharmacyController::class, 'markReady']);
-    //Route::post('/pharmacy/prescriptions/{id}/dispense', [PharmacyController::class, 'dispense']);
-//
+    // Route::get('/pharmacy/prescriptions', [PharmacyController::class, 'index']);
+    // Route::post('/pharmacy/prescriptions/{id}/ready', [PharmacyController::class, 'markReady']);
+    // Route::post('/pharmacy/prescriptions/{id}/dispense', [PharmacyController::class, 'dispense']);
     //
-    //Route::get('/pharmacy/home-stats', [PharmacyController::class, 'homeStats']);
-//
-    //Route::get('/pharmacy/inventory', [PharmacyController::class, 'getInventory']);
-    //Route::post('/pharmacy/inventory', [PharmacyController::class, 'storeInventory']);
-    //Route::put('/pharmacy/inventory/{id}', [PharmacyController::class, 'updateInventory']);
-    //Route::post('/pharmacy/inventory/{id}/adjust', [PharmacyController::class, 'adjustQuantity']);
+    //
+    // Route::get('/pharmacy/home-stats', [PharmacyController::class, 'homeStats']);
+    //
+    // Route::get('/pharmacy/inventory', [PharmacyController::class, 'getInventory']);
+    // Route::post('/pharmacy/inventory', [PharmacyController::class, 'storeInventory']);
+    // Route::put('/pharmacy/inventory/{id}', [PharmacyController::class, 'updateInventory']);
+    // Route::post('/pharmacy/inventory/{id}/adjust', [PharmacyController::class, 'adjustQuantity']);
 
 });
 Route::post('/reception/patients', [ReceptionController::class, 'registerPatient']);

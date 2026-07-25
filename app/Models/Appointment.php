@@ -36,4 +36,15 @@ class Appointment extends Model
     {
         return $this->hasOne(MedicalRecord::class);
     }
+
+    public function ratings()
+    {
+        return $this->hasMany(DoctorRating::class, 'doctor_id');
+    }
+
+    // حساب متوسط التقييم تلقائياً للطبيب
+    public function getAverageRatingAttribute()
+    {
+        return $this->ratings()->avg('rating') ? number_format($this->ratings()->avg('rating'), 1) : 0;
+    }
 }

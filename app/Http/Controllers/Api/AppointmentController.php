@@ -363,4 +363,38 @@ public function doctorPatientDetail($id)
             'data' => $appointment,
         ]);
     }
+
+
+    public function storeRating(Request $request, $appointmentId)
+{
+    $request->validate([
+        'rating' => 'required|integer|min:1|max:5',
+        'comment' => 'nullable|string|max:500',
+    ]);
+
+    $appointment = Appointment::findOrFail($appointmentId);
+
+    // التحقق أن الزيارة منتهية وأن المريض هو صاحب الموعد
+    if ($appointment->status !== 'completed') {
+        return response()->json(['message' => 'لا يمكن تقييم موعد غير منتهي'], 422);
+    }
+
+    // التأكد من عدم تكرار التقييم لنفس الموعد
+    $existingRating = DoctorRating::where('appointment_id', $appointment->id)->first();
+    if ($existingRating) {
+        return response()->json(['message' => 'تم تقييم هذه الزيارة مسبقاً'], 422);
+    }
+
+    DoctorRating::create([
+        'appointment_id' => $appointment->id,
+        'doctor_id' => $appointment->doctor_id,
+        'patient_id' => auth()->id(),
+        'rating' => $request->rating,
+        'comment' => $request->comment,
+    ]);
+
+    return response()->json(['message' => 'تم إضافة تقييمك بنجاح. شكراً لك!'], 200);
+}
+
+
 }

@@ -2,15 +2,16 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
-use Illuminate\Database\Eloquent\Factories\HasFactory; // 1. تأكد من هذا الـ use
+use Laravel\Sanctum\HasApiTokens; // 1. تأكد من هذا الـ use
+
 class User extends Authenticatable
 {
-    use HasApiTokens, Notifiable, HasFactory;
+    use HasApiTokens, HasFactory, Notifiable;
 
-    protected $fillable = ['name', 'email', 'password', 'role','status','national_id', 'phone','birth_date','gender','address','profile_picture',];
+    protected $fillable = ['name', 'email', 'password', 'role', 'status', 'national_id', 'phone', 'birth_date', 'gender', 'address', 'profile_picture'];
 
     protected $hidden = ['password', 'remember_token'];
 
@@ -34,12 +35,25 @@ class User extends Authenticatable
     {
         return $this->hasOne(LabProfile::class);
     }
-    public function posts() {
-    return $this->hasMany(Post::class);
+
+    public function posts()
+    {
+        return $this->hasMany(Post::class);
     }
 
-    public function appointments() {
-    return $this->hasMany(Appointment::class, 'patient_id');
+    public function appointments()
+    {
+        return $this->hasMany(Appointment::class, 'patient_id');
     }
 
+     public function ratings()
+    {
+        return $this->hasMany(DoctorRating::class, 'doctor_id');
+    }
+
+    // حساب متوسط التقييم تلقائياً للطبيب
+    public function getAverageRatingAttribute()
+    {
+        return $this->ratings()->avg('rating') ? number_format($this->ratings()->avg('rating'), 1) : 0;
+    }
 }
