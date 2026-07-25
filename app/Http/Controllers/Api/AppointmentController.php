@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
+use App\Models\User;
 use Illuminate\Http\Request;
 use App\Models\LabOrder;
 class AppointmentController extends Controller
@@ -27,9 +28,10 @@ class AppointmentController extends Controller
             ], 409);
         }
 
-        // إنشاء الموعد
+        // إنشاء الموعد - المريض هون هو صاحب حساب (User)، عكس مواعيد الاستقبال يلي بتحجز لـ Patient
         $appointment = Appointment::create([
             'patient_id'   => $request->user()->id,
+            'patient_type' => User::class,
             'doctor_id'    => $validated['doctor_id'],
             'scheduled_at' => $validated['scheduled_at'],
             'status'       => 'pending',
@@ -56,7 +58,9 @@ class AppointmentController extends Controller
 
         } else {
 
+            // patient_id لحاله مش كافي للتمييز (ممكن يتصادف نفس الرقم مع مريض مسجل من الاستقبال)
             $appointments = Appointment::where('patient_id', $user->id)
+                ->where('patient_type', User::class)
                 ->with('doctor')
                 ->orderBy('scheduled_at')
                 ->get();
@@ -278,13 +282,20 @@ public function storeLabOrder(Request $request, $id)
 {
     $doctorId = auth()->id();
 
-    // جلب أIDs المرضى المرتبطين بمواعيد هذا الطبيب
-    $patientIds = Appointment::where('doctor_id', $doctorId)
-        ->pluck('patient_id')
-        ->unique();
-
-    // جلب بيانات هؤلاء المرضى
-    $patients = \App\Models\Patient::whereIn('id', $patientIds)->get();
+    // المريض ممكن يكون User (حجز بنفسه) أو Patient (سجله الاستقبال)، فبنعتمد
+    // على العلاقة polymorphic ($appointment->patient) بدل ما نفترض جدول واحد بس
+    $patients = Appointment::where('doctor_id', $doctorId)
+        ->with('patient')
+        ->get()
+        ->pluck('patient')
+        ->filter()
+        ->unique(fn ($patient) => get_class($patient) . ':' . $patient->id)
+        ->values()
+        ->map(fn ($patient) => [
+            'id' => $patient->id,
+            'full_name' => $patient->full_name ?? $patient->name ?? 'مريض',
+            'phone' => $patient->phone ?? null,
+        ]);
 
     return response()->json([
         'message' => 'تم استرجاع قائمة المرضى بنجاح',
@@ -296,21 +307,22 @@ public function doctorPatientDetail($id)
 {
     $doctorId = auth()->id();
 
-    // التأكد أن المريض لديه موعد مع هذا الطبيب
+    // التأكد أن المريض لديه موعد مع هذا الطبيب، وناخد منه patient_type الصحيح
     $appointment = Appointment::where('doctor_id', $doctorId)
         ->where('patient_id', $id)
+        ->with('patient')
         ->first();
 
-    if (!$appointment) {
+    if (!$appointment || !$appointment->patient) {
         return response()->json(['message' => 'المريض غير موجود أو ليس لديك صلاحية لعرضه'], 404);
     }
 
-    // جلب بيانات المريض الأساسية
-    $patient = \App\Models\Patient::findOrFail($id);
+    $patient = $appointment->patient;
 
-    // جلب كل مواعيد هذا المريض مع هذا الطبيب
+    // جلب كل مواعيد هذا المريض (نفس patient_id ونفس patient_type) مع هذا الطبيب
     $patientAppointments = Appointment::where('doctor_id', $doctorId)
         ->where('patient_id', $id)
+        ->where('patient_type', $appointment->patient_type)
         ->orderBy('scheduled_at', 'desc')
         ->get();
 
@@ -338,8 +350,8 @@ public function doctorPatientDetail($id)
 
         $appointment = Appointment::findOrFail($id);
 
-        // تأكد أن المريض هو صاحب الموعد
-        if ($appointment->patient_id != $request->user()->id) {
+        // تأكد أن المريض هو صاحب الموعد (ولازم نتحقق من patient_type كمان، مش بس الـ id)
+        if ($appointment->patient_type !== User::class || $appointment->patient_id != $request->user()->id) {
             return response()->json([
                 'message' => 'غير مصرح لك بتعديل هذا الموعد'
             ], 403);

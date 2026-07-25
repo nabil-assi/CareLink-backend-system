@@ -11,14 +11,16 @@ class Appointment extends Model
     use HasFactory;
 
     protected $fillable = [
-        'doctor_id', 'patient_id', 'scheduled_at', 'duration_minutes',
+        'doctor_id', 'patient_id', 'patient_type', 'scheduled_at', 'duration_minutes',
         'type', 'status', 'description', 'fees', 'meeting_link', 'cancellation_reason',
         'diagnosis', 'clinical_notes', 'lab_tests', 'lab_status', 'medications', // الحقول الجديدة
     ];
 
+    // علاقة polymorphic: المريض ممكن يكون User (سجل حساب وحجز بنفسه)
+    // أو Patient (سجّله موظف الاستقبال بدون حساب دخول). patient_type بيحدد أي جدول.
     public function patient()
     {
-        return $this->belongsTo(User::class, 'patient_id');
+        return $this->morphTo();
     }
 
     public function doctor()
