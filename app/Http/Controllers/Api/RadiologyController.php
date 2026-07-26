@@ -1,0 +1,71 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\ImagingOrder;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+
+class RadiologyController extends Controller
+{
+    // جلب كل طلبات الأشعة للوحة فني الأشعة
+    public function index()
+    {
+        $orders = ImagingOrder::with(['appointment.patient', 'doctor'])
+            ->latest()
+            ->get()
+            ->map(function ($order) {
+                $patient = $order->appointment?->patient;
+
+                return [
+                    'id' => $order->id,
+                    'patient' => $patient->full_name ?? $patient->name ?? 'مريض غير معروف',
+                    'patientAge' => $patient?->birth_date ? Carbon::parse($patient->birth_date)->age : null,
+                    'patientGender' => $patient->gender ?? null,
+                    'doctor' => $order->doctor->name ?? 'طبيب غير معروف',
+                    'studies' => $order->studies,
+                    'modality' => $order->modality,
+                    'anatomy' => $order->anatomy,
+                    'clinicalReason' => $order->clinical_reason,
+                    'notes' => $order->notes,
+                    'priority' => $order->priority,
+                    'status' => $order->status,
+                    'resultText' => $order->result_text,
+                    'completedBy' => $order->completed_by,
+                    'completedAt' => $order->completed_at,
+                    'createdAt' => $order->created_at,
+                ];
+            });
+
+        return response()->json(['status' => true, 'data' => $orders], 200);
+    }
+
+    // بدء التصوير (تغيير الحالة إلى in_progress)
+    public function start($id)
+    {
+        $order = ImagingOrder::findOrFail($id);
+        $order->update(['status' => 'in_progress']);
+
+        return response()->json(['message' => 'تم بدء التصوير بنجاح', 'data' => $order]);
+    }
+
+    // رفع تقرير الأشعة واكتمال الطلب
+    public function complete(Request $request, $id)
+    {
+        $request->validate([
+            'result_text' => 'required|string',
+            'completed_by' => 'nullable|string',
+        ]);
+
+        $order = ImagingOrder::findOrFail($id);
+        $order->update([
+            'status' => 'completed',
+            'result_text' => $request->result_text,
+            'completed_by' => $request->completed_by ?? 'فني أشعة',
+            'completed_at' => now(),
+        ]);
+
+        return response()->json(['message' => 'تم إرسال تقرير الأشعة بنجاح', 'data' => $order]);
+    }
+}

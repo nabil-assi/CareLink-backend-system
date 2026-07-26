@@ -9,6 +9,8 @@ use App\Models\Conversation;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class DoctorController extends Controller
 {
@@ -112,6 +114,30 @@ class DoctorController extends Controller
             'status' => true,
             'message' => 'تم تحديث البيانات بنجاح',
         ], 200);
+    }
+
+    // نفس منطق PatientController::updateProfilePicture بالظبط (نخزن المسار
+    // النسبي بس بقاعدة البيانات، والرابط الكامل بيترجع بالرد فقط) عشان يضل
+    // متوافق مع صفحة إعدادات المريض يلي مبنية بنفس الطريقة
+    public function updateProfilePicture(Request $request)
+    {
+        $request->validate([
+            'profile_picture' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+        ]);
+
+        $user = $request->user();
+
+        if ($user->profile_picture) {
+            Storage::disk('public')->delete($user->profile_picture);
+        }
+
+        $path = $request->file('profile_picture')->store('profile_pictures', 'public');
+        $user->update(['profile_picture' => $path]);
+
+        return response()->json([
+            'message' => 'تم تحديث الصورة الشخصية',
+            'profile_picture' => asset('storage/'.$path),
+        ]);
     }
 
     public function changePassword(Request $request)

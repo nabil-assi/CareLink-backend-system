@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 require base_path('routes/api/patient.php');
                 require base_path('routes/api/reception.php');
                 require base_path('routes/api/pharmacy.php');
+                require base_path('routes/api/radiology.php');
 
             });
         },

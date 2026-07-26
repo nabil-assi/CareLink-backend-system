@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
+use App\Models\ImagingOrder;
 use App\Models\LabOrder;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -33,6 +34,7 @@ class AppointmentController extends Controller
         // إنشاء الموعد - المريض هون هو صاحب حساب (User)، عكس مواعيد الاستقبال يلي بتحجز لـ Patient
         $appointment = Appointment::create([
             'patient_id'   => $request->user()->id,
+            'patient_type' => User::class,
             'doctor_id'    => $validated['doctor_id'],
             'scheduled_at' => $validated['scheduled_at'],
             'status' => 'pending',
@@ -46,7 +48,9 @@ class AppointmentController extends Controller
 
    public function index(Request $request)
 {
+    // patient_type لازم كمان، وإلا ممكن نجيب موعد مريض استقبال بالصدفة إذا تصادف نفس الـ id
     $appointments = Appointment::where('patient_id', $request->user()->id)
+        ->where('patient_type', User::class)
         ->with(['doctor', 'doctor.doctorProfile'])
         ->get();
 
@@ -223,6 +227,37 @@ class AppointmentController extends Controller
         ], 201);
     }
 
+    // إنشاء طلب أشعة للمريض تبع الموعد (زي storeLabOrder بالظبط، بس بدون
+    // عمود patient_id منفصل - المريض بينجلب دايماً من appointment->patient)
+    public function storeImagingOrder(Request $request, $id)
+    {
+        $request->validate([
+            'studies' => 'required|string',
+            'modality' => 'nullable|string',
+            'anatomy' => 'nullable|string',
+            'priority' => 'nullable|string',
+            'notes' => 'nullable|string',
+        ]);
+
+        $imagingOrder = ImagingOrder::create([
+            'appointment_id' => $id,
+            'doctor_id' => auth()->id(),
+            'studies' => $request->studies,
+            'modality' => $request->modality,
+            'anatomy' => $request->anatomy,
+            'clinical_reason' => $request->notes ?: 'طلب تصوير من الطبيب المعالج',
+            'notes' => $request->notes,
+            'priority' => $request->priority ?? 'routine',
+            'status' => 'pending',
+        ]);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'تم إرسال طلب الأشعة بنجاح',
+            'data' => $imagingOrder,
+        ], 201);
+    }
+
     public function storePrescription(Request $request, $id)
     {
         $doctorId = auth()->id();
@@ -262,13 +297,20 @@ class AppointmentController extends Controller
     {
         $doctorId = auth()->id();
 
-    // جلب أIDs المرضى المرتبطين بمواعيد هذا الطبيب
-    $patientIds = Appointment::where('doctor_id', $doctorId)
-        ->pluck('patient_id')
-        ->unique();
-
-    // جلب بيانات هؤلاء المرضى
-    $patients = \App\Models\Patient::whereIn('id', $patientIds)->get();
+        // المريض ممكن يكون User (حجز بنفسه) أو Patient (سجله الاستقبال)، فبنعتمد
+        // على العلاقة polymorphic ($appointment->patient) بدل ما نفترض جدول واحد بس
+        $patients = Appointment::where('doctor_id', $doctorId)
+            ->with('patient')
+            ->get()
+            ->pluck('patient')
+            ->filter()
+            ->unique(fn ($patient) => get_class($patient).':'.$patient->id)
+            ->values()
+            ->map(fn ($patient) => [
+                'id' => $patient->id,
+                'full_name' => $patient->full_name ?? $patient->name ?? 'مريض',
+                'phone' => $patient->phone ?? null,
+            ]);
 
         return response()->json([
             'message' => 'تم استرجاع قائمة المرضى بنجاح',
@@ -280,21 +322,22 @@ class AppointmentController extends Controller
     {
         $doctorId = auth()->id();
 
-    // التأكد أن المريض لديه موعد مع هذا الطبيب
+    // التأكد أن المريض لديه موعد مع هذا الطبيب، وناخد منه patient_type الصحيح
     $appointment = Appointment::where('doctor_id', $doctorId)
         ->where('patient_id', $id)
+        ->with('patient')
         ->first();
 
-    if (!$appointment) {
+    if (!$appointment || !$appointment->patient) {
         return response()->json(['message' => 'المريض غير موجود أو ليس لديك صلاحية لعرضه'], 404);
     }
 
-    // جلب بيانات المريض الأساسية
-    $patient = \App\Models\Patient::findOrFail($id);
+    $patient = $appointment->patient;
 
-    // جلب كل مواعيد هذا المريض مع هذا الطبيب
+    // جلب كل مواعيد هذا المريض (نفس patient_id ونفس patient_type) مع هذا الطبيب
     $patientAppointments = Appointment::where('doctor_id', $doctorId)
         ->where('patient_id', $id)
+        ->where('patient_type', $appointment->patient_type)
         ->orderBy('scheduled_at', 'desc')
         ->get();
 

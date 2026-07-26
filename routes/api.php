@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\OfferController;
 use App\Http\Controllers\Api\PatientAuthController;
 use App\Http\Controllers\Api\PatientController;
 use App\Http\Controllers\Api\PharmacyController;
+use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\Reception\ReceptionController;
 use Illuminate\Support\Facades\Route;
 
@@ -34,8 +35,11 @@ Route::get('/offers', [OfferController::class, 'index']);
 Route::post('/newsletter/subscribe', [OfferController::class, 'subscribe']);
 
 Route::middleware('auth:sanctum')->group(function () {
-
     Route::get('/appointments/{appointmentId}/conversation', [ChatController::class, 'startOrGetConversation']);
+
+    // رفع/تحديث الصورة الشخصية - شغالة لأي دور (موظف، طبيب، مريض...)
+    Route::post('/profile/picture', [ProfileController::class, 'updatePicture']);
+
     Route::get('/conversations/{conversationId}/messages', [ChatController::class, 'getMessages']);
     Route::post('/conversations/{conversationId}/messages', [ChatController::class, 'sendMessage']);
 

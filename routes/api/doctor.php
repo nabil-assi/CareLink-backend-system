@@ -9,6 +9,7 @@ Route::middleware(['auth:sanctum', 'checkRole:doctor'])->prefix('doctor')->group
 
     Route::get('/profile', [DoctorController::class, 'getProfile']);
     Route::put('/profile', [DoctorController::class, 'updateProfile']);
+    Route::post('/profile-picture', [DoctorController::class, 'updateProfilePicture']);
 
     Route::post('/profile/change-password', [DoctorController::class, 'changePassword']);
 
@@ -23,6 +24,7 @@ Route::middleware(['auth:sanctum', 'checkRole:doctor'])->prefix('doctor')->group
 
     Route::post('/appointments/{id}/diagnosis', [AppointmentController::class, 'saveDiagnosis']);
     Route::post('/appointments/{id}/lab-orders', [AppointmentController::class, 'storeLabOrder']);
+    Route::post('/appointments/{id}/imaging-orders', [AppointmentController::class, 'storeImagingOrder']);
     Route::post('/appointments/{id}/prescriptions', [AppointmentController::class, 'storePrescription']);
     Route::post('/appointments/{id}/complete', [AppointmentController::class, 'completeAppointment']);
 
