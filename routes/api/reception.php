@@ -18,8 +18,18 @@ Route::middleware('auth:sanctum')->prefix('reception')->group(function () {
     Route::put('/appointments/{id}', [ReceptionController::class, 'updateAppointment']);
     Route::delete('/appointments/{id}', [ReceptionController::class, 'cancelAppointment']);
 
+    // أزرار "تسجيل حضور" / "إلغاء" و"تحويل للطبيب" بلوحة الاستقبال بترسل على هالمسارين تحديداً
+    Route::patch('/appointments/{id}/status', [ReceptionController::class, 'updateAppointmentStatus']);
+    Route::post('/appointments/{id}/transfer', [ReceptionController::class, 'transferToDoctor']);
+    Route::post('/appointments/{id}/end', [ReceptionController::class, 'endVisit']);
+
     Route::get('/waiting-queue', [ReceptionController::class, 'getWaitingQueue']);
 
     Route::get('/doctors', [ReceptionController::class, 'listDoctors']);
+
+    // تسليم/تسلّم الوردية
+    Route::get('/shift-handovers', [ReceptionController::class, 'listShiftHandovers']);
+    Route::post('/shift-handovers', [ReceptionController::class, 'storeShiftHandover']);
+    Route::post('/shift-handovers/{id}/acknowledge', [ReceptionController::class, 'acknowledgeShiftHandover']);
 
 });

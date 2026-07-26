@@ -4,8 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
-use App\Models\LabOrder;
-use App\Models\Patient;
 use Illuminate\Http\Request;
 
 class AppointmentController extends Controller
@@ -29,10 +27,10 @@ class AppointmentController extends Controller
             ], 409);
         }
 
-        // إنشاء الموعد
+        // إنشاء الموعد - المريض هون هو صاحب حساب (User)، عكس مواعيد الاستقبال يلي بتحجز لـ Patient
         $appointment = Appointment::create([
-            'patient_id' => $request->user()->id,
-            'doctor_id' => $validated['doctor_id'],
+            'patient_id'   => $request->user()->id,
+            'doctor_id'    => $validated['doctor_id'],
             'scheduled_at' => $validated['scheduled_at'],
             'status' => 'pending',
         ]);
@@ -58,7 +56,9 @@ class AppointmentController extends Controller
 
         } else {
 
+            // patient_id لحاله مش كافي للتمييز (ممكن يتصادف نفس الرقم مع مريض مسجل من الاستقبال)
             $appointments = Appointment::where('patient_id', $user->id)
+                ->where('patient_type', User::class)
                 ->with('doctor')
                 ->orderBy('scheduled_at')
                 ->get();
@@ -277,13 +277,13 @@ class AppointmentController extends Controller
     {
         $doctorId = auth()->id();
 
-        // جلب أIDs المرضى المرتبطين بمواعيد هذا الطبيب
-        $patientIds = Appointment::where('doctor_id', $doctorId)
-            ->pluck('patient_id')
-            ->unique();
+    // جلب أIDs المرضى المرتبطين بمواعيد هذا الطبيب
+    $patientIds = Appointment::where('doctor_id', $doctorId)
+        ->pluck('patient_id')
+        ->unique();
 
-        // جلب بيانات هؤلاء المرضى
-        $patients = Patient::whereIn('id', $patientIds)->get();
+    // جلب بيانات هؤلاء المرضى
+    $patients = \App\Models\Patient::whereIn('id', $patientIds)->get();
 
         return response()->json([
             'message' => 'تم استرجاع قائمة المرضى بنجاح',
@@ -295,23 +295,23 @@ class AppointmentController extends Controller
     {
         $doctorId = auth()->id();
 
-        // التأكد أن المريض لديه موعد مع هذا الطبيب
-        $appointment = Appointment::where('doctor_id', $doctorId)
-            ->where('patient_id', $id)
-            ->first();
+    // التأكد أن المريض لديه موعد مع هذا الطبيب
+    $appointment = Appointment::where('doctor_id', $doctorId)
+        ->where('patient_id', $id)
+        ->first();
 
-        if (! $appointment) {
-            return response()->json(['message' => 'المريض غير موجود أو ليس لديك صلاحية لعرضه'], 404);
-        }
+    if (!$appointment) {
+        return response()->json(['message' => 'المريض غير موجود أو ليس لديك صلاحية لعرضه'], 404);
+    }
 
-        // جلب بيانات المريض الأساسية
-        $patient = Patient::findOrFail($id);
+    // جلب بيانات المريض الأساسية
+    $patient = \App\Models\Patient::findOrFail($id);
 
-        // جلب كل مواعيد هذا المريض مع هذا الطبيب
-        $patientAppointments = Appointment::where('doctor_id', $doctorId)
-            ->where('patient_id', $id)
-            ->orderBy('scheduled_at', 'desc')
-            ->get();
+    // جلب كل مواعيد هذا المريض مع هذا الطبيب
+    $patientAppointments = Appointment::where('doctor_id', $doctorId)
+        ->where('patient_id', $id)
+        ->orderBy('scheduled_at', 'desc')
+        ->get();
 
         // إرسال البيانات مجتمعة
         return response()->json([
@@ -336,8 +336,8 @@ class AppointmentController extends Controller
 
         $appointment = Appointment::findOrFail($id);
 
-        // تأكد أن المريض هو صاحب الموعد
-        if ($appointment->patient_id != $request->user()->id) {
+        // تأكد أن المريض هو صاحب الموعد (ولازم نتحقق من patient_type كمان، مش بس الـ id)
+        if ($appointment->patient_type !== User::class || $appointment->patient_id != $request->user()->id) {
             return response()->json([
                 'message' => 'غير مصرح لك بتعديل هذا الموعد',
             ], 403);

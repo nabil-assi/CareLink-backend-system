@@ -9,12 +9,24 @@ class Patient extends Model
 {
     protected $guarded = [];
 
+    // $fillable غير الفاضي بيلغي أثر $guarded=[] بلارافيل (بيصير allowlist صارم)،
+    // فأي عمود مش مذكور هون بينرفض بصمت من mass assignment - لهيك ناقص guardian_id
+    // وحقول التأمين/التنبيهات كانت بتترفض بصمت من update() بدون أي خطأ ظاهر
     protected $fillable = [
         'full_name',
         'phone',
         'national_id',
         'birth_date',
         'address',
+        'guardian_id',
+        'insurance_status',
+        'insurance_provider',
+        'reception_flags',
+        'reception_note',
+    ];
+
+    protected $casts = [
+        'reception_flags' => 'array',
     ];
 
     // العلاقة مع الوصي أو ولي الأمر
