@@ -14,10 +14,11 @@ Route::middleware(['auth:sanctum', 'checkRole:doctor'])->prefix('doctor')->group
 
     Route::get('/appointments', [AppointmentController::class, 'index']);
     Route::get('/appointments/{id}', [AppointmentController::class, 'show']);
+    Route::patch('/appointments/{id}/status', [AppointmentController::class, 'updateStatus']);
 
-    Route::patch('/appointments/{id}/cancel', [AppointmentController::class, 'cancel']);
+    Route::delete('/appointments/{id}', [AppointmentController::class, 'cancel']);
     Route::post('/appointments/{appointment}/medical-records', [AppointmentController::class, 'storeMedicalRecord']);
-   // Route::post('/appointments/{id}/lab-orders', [DoctorAppointmentController::class, 'storeLabOrder']);
+    // Route::post('/appointments/{id}/lab-orders', [DoctorAppointmentController::class, 'storeLabOrder']);
     // Route::get('/appointments/{appointment}/medical-records', [AppointmentController::class, 'getMedicalRecord']);
 
     Route::post('/appointments/{id}/diagnosis', [AppointmentController::class, 'saveDiagnosis']);

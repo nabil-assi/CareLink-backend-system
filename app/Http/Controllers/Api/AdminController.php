@@ -3,19 +3,17 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use App\Models\Broadcast;
+use App\Models\User;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 class AdminController extends Controller
 {
-
-
-public function store(Request $request)
+    public function store(Request $request)
     {
         // 1. تحقق صارم يتطابق مع الحقول المرسلة من React
         $validated = $request->validate([
@@ -59,7 +57,6 @@ public function store(Request $request)
             ], 201);
         });
     }
-
 
     public function getAllAdmins()
     {
@@ -106,7 +103,7 @@ public function store(Request $request)
         NotificationService::send('doctor_approved', $doctor, ['name' => $doctor->name]);
 
         return response()->json([
-            'message' => 'تم تفعيل حساب الطبيب ' . $doctor->name . ' بنجاح',
+            'message' => 'تم تفعيل حساب الطبيب '.$doctor->name.' بنجاح',
         ], 200);
     }
 
@@ -124,6 +121,32 @@ public function store(Request $request)
 
         return response()->json([
             'message' => 'تم رفض طلب الطبيب وحذف بياناته من النظام',
+        ], 200);
+    }
+
+    public function suspendDoctor($id)
+    {
+        $doctor = User::where('role', 'doctor')->findOrFail($id);
+
+        $doctor->update(['status' => false]);
+
+        NotificationService::send('doctor_suspended', $doctor, ['name' => $doctor->name]);
+
+        return response()->json([
+            'message' => 'تم إيقاف حساب الطبيب '.$doctor->name.' بنجاح',
+        ], 200);
+    }
+
+    public function activateDoctor($id)
+    {
+        $doctor = User::where('role', 'doctor')->findOrFail($id);
+
+        $doctor->update(['status' => true]);
+
+        NotificationService::send('doctor_suspended', $doctor, ['name' => $doctor->name]);
+
+        return response()->json([
+            'message' => 'تم تفعيل حساب الطبيب '.$doctor->name.' بنجاح',
         ], 200);
     }
 
@@ -152,11 +175,11 @@ public function store(Request $request)
         $user = $request->user();
 
         $validated = $request->validate([
-            'name'        => 'required|string|max:255',
-            'email'       => 'required|email|unique:users,email,' . $user->id,
-            'phone'       => 'required|string|max:20',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,'.$user->id,
+            'phone' => 'required|string|max:20',
             'national_id' => 'required|string|max:20',
-            'role'        => 'required|string',
+            'role' => 'required|string',
         ]);
 
         $user->update($validated);
@@ -168,8 +191,8 @@ public function store(Request $request)
     public function updatePassword(Request $request)
     {
         $request->validate([
-            'current_password'      => 'required|current_password',
-            'password'              => ['required', 'confirmed', Password::defaults()],
+            'current_password' => 'required|current_password',
+            'password' => ['required', 'confirmed', Password::defaults()],
         ]);
 
         $request->user()->update([
@@ -178,6 +201,4 @@ public function store(Request $request)
 
         return response()->json(['message' => 'تم تحديث كلمة المرور بنجاح']);
     }
-
-
 }

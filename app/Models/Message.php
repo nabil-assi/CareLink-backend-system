@@ -3,9 +3,21 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory; // أضف هذا السطر
-class Message extends Model
-{    use HasFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-    protected $fillable = ['conversation_id', 'sender_type', 'body'];
+class Message extends Model
+{
+    use HasFactory;
+
+    protected $fillable = ['conversation_id', 'sender_id', 'sender_type', 'body'];
+
+    public function conversation()
+    {
+        return $this->belongsTo(Conversation::class);
+    }
+
+    public function sender()
+    {
+        return $this->belongsTo(User::class, 'sender_id');
+    }
 }

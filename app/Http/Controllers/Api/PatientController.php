@@ -13,6 +13,16 @@ use Illuminate\Http\Request;
 
 class PatientController extends Controller
 {
+    public function doctors()
+    {
+        $doctors = User::where('role', 'doctor')->with('doctorProfile')->get();
+
+        return response()->json([
+            'status' => true,
+            'data' => $doctors
+        ], 200);
+    }
+    
     public function getAllPatients()
     {
         $patients = User::where('role', 'patient')

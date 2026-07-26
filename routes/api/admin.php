@@ -17,6 +17,9 @@ Route::middleware(['auth:sanctum', 'checkRole:admin'])->prefix('admin')->group(f
 
     Route::get('/pending-doctors', [AdminController::class, 'showPending']);
     Route::patch('/approve-doctor/{id}', [AdminController::class, 'approveDoctor']);
+        Route::put('/suspend-doctor/{id}', [AdminController::class, 'suspendDoctor']);
+        Route::put('/activate-doctor/{id}', [AdminController::class, 'activateDoctor']);
+
     Route::delete('/reject-doctor/{id}', [AdminController::class, 'rejectDoctor']);
 
     // Route::apiResource('ads', AdController::class);

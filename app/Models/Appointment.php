@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasOne; // أضف هذا السطر
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Appointment extends Model
 {
@@ -13,11 +13,9 @@ class Appointment extends Model
     protected $fillable = [
         'doctor_id', 'patient_id', 'patient_type', 'scheduled_at', 'duration_minutes',
         'type', 'status', 'description', 'fees', 'meeting_link', 'cancellation_reason',
-        'diagnosis', 'clinical_notes', 'lab_tests', 'lab_status', 'medications', // الحقول الجديدة
+        'diagnosis', 'clinical_notes', 'lab_tests', 'lab_status', 'medications',
     ];
 
-    // علاقة polymorphic: المريض ممكن يكون User (سجل حساب وحجز بنفسه)
-    // أو Patient (سجّله موظف الاستقبال بدون حساب دخول). patient_type بيحدد أي جدول.
     public function patient()
     {
         return $this->morphTo();
@@ -28,7 +26,6 @@ class Appointment extends Model
         return $this->belongsTo(User::class, 'doctor_id');
     }
 
-    // هان ربطت الوصفة الطبية بجدول المواعيد بحيث كل موعد اله وصفه خاصة فيه
     public function prescription(): HasOne
     {
         return $this->hasOne(Prescription::class);
@@ -44,7 +41,6 @@ class Appointment extends Model
         return $this->hasMany(DoctorRating::class, 'doctor_id');
     }
 
-    // حساب متوسط التقييم تلقائياً للطبيب
     public function getAverageRatingAttribute()
     {
         return $this->ratings()->avg('rating') ? number_format($this->ratings()->avg('rating'), 1) : 0;

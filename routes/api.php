@@ -34,8 +34,13 @@ Route::get('/offers', [OfferController::class, 'index']);
 Route::post('/newsletter/subscribe', [OfferController::class, 'subscribe']);
 
 Route::middleware('auth:sanctum')->group(function () {
+
+    Route::get('/appointments/{appointmentId}/conversation', [ChatController::class, 'startOrGetConversation']);
     Route::get('/conversations/{conversationId}/messages', [ChatController::class, 'getMessages']);
     Route::post('/conversations/{conversationId}/messages', [ChatController::class, 'sendMessage']);
+
+    // Route::get('/conversations/{conversationId}/messages', [ChatController::class, 'getMessages']);
+    // Route::post('/conversations/{conversationId}/messages', [ChatController::class, 'sendMessage']);
 
     Route::get('/admin/posts', [PostController::class, 'index']);
     Route::post('/admin/posts', [PostController::class, 'store']);

@@ -3,55 +3,69 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Appointment;
 use App\Models\Conversation;
-use App\Models\Message;
-use App\Models\User;
 use Illuminate\Http\Request;
 
 class ChatController extends Controller
 {
-    public function startOrGetConversation(Request $request, $doctorId)
+    // فتح أو رجوع المحادثة الخاصة بموعد معين
+    public function startOrGetConversation(Request $request, $appointmentId)
     {
-        // التحقق من أن الطبيب المطلوب هو بالفعل مستخدم لديه دور 'doctor'
-        $doctorExists = User::where('id', $doctorId)->where('role', 'doctor')->exists();
-        if (!$doctorExists) {
-            return response()->json(['message' => 'الطبيب غير موجود'], 404);
+        $appointment = Appointment::findOrFail($appointmentId);
+        $userId = $request->user()->id;
+
+        dd([
+            'logged_in_user_id' => $userId,
+            'appointment_doctor_id' => $appointment->doctor_id,
+            'appointment_patient_id' => $appointment->patient_id,
+        ]);
+
+        // تأكد إن المستخدم الحالي هو فعلاً طرف بهاي الموعد
+        if ($appointment->doctor_id !== $userId && $appointment->patient_id !== $userId) {
+            return response()->json(['message' => 'غير مصرح لك'], 403);
         }
 
-        $conversation = Conversation::where('patient_id', $request->user()->id)
-            ->where('doctor_id', $doctorId)
-            ->first();
+        $conversation = Conversation::firstOrCreate(
+            ['appointment_id' => $appointment->id],
+            ['doctor_id' => $appointment->doctor_id, 'patient_id' => $appointment->patient_id]
+        );
 
-        if (! $conversation) {
-            $conversation = Conversation::create([
-                'patient_id' => $request->user()->id,
-                'doctor_id' => $doctorId,
-            ]);
-        }
-
-        return response()->json(['data' => $conversation]);
+        return response()->json(['data' => $conversation->load('appointment')]);
     }
 
-    public function getMessages($conversationId)
+    public function getMessages(Request $request, $conversationId)
     {
-        // تأكد من أن المستخدم الحالي هو طرف في المحادثة
-        $messages = Message::where('conversation_id', $conversationId)
-            ->orderBy('created_at', 'asc')
-            ->get();
+        $conversation = Conversation::findOrFail($conversationId);
 
-        return response()->json(['data' => $messages]);
+        if (! $conversation->hasParticipant($request->user()->id)) {
+            return response()->json(['message' => 'غير مصرح لك'], 403);
+        }
+
+        $messages = $conversation->messages()->orderBy('created_at', 'asc')->get();
+
+        return response()->json(['data' => $messages, 'locked' => $conversation->isLocked()]);
     }
 
     public function sendMessage(Request $request, $conversationId)
     {
-        $validated = $request->validate(['body' => 'required|string']);
+        $conversation = Conversation::with('appointment')->findOrFail($conversationId);
+        $userId = $request->user()->id;
 
-        // التحقق من نوع المرسل بناءً على الـ role وليس الموديل
+        if (! $conversation->hasParticipant($userId)) {
+            return response()->json(['message' => 'غير مصرح لك'], 403);
+        }
+
+        if ($conversation->isLocked()) {
+            return response()->json(['message' => 'الموعد منتهي، ما بتقدر تبعت رسائل'], 403);
+        }
+
+        $validated = $request->validate(['body' => 'required|string|max:2000']);
+
         $type = $request->user()->role === 'doctor' ? 'doctor' : 'patient';
 
-        $message = Message::create([
-            'conversation_id' => $conversationId,
-            'sender_id' => $request->user()->id, // إضافة الـ sender_id لتوثيق المرسل
+        $message = $conversation->messages()->create([
+            'sender_id' => $userId,
             'sender_type' => $type,
             'body' => $validated['body'],
         ]);

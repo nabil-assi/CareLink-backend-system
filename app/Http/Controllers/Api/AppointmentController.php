@@ -10,10 +10,11 @@ use Illuminate\Http\Request;
 
 class AppointmentController extends Controller
 {
+    
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'doctor_id' => 'required|exists:users,id',
+            'doctor_id' => 'required|exists:users,id,role,doctor',
             'scheduled_at' => 'required|date',
         ]);
 
@@ -43,35 +44,17 @@ class AppointmentController extends Controller
         ], 201);
     }
 
-    public function index(Request $request)
-    {
-        // الطبيب سيحصل على مواعيده.
-        // المريض سيحصل على مواعيده.
-        $user = $request->user();
+   public function index(Request $request)
+{
+    $appointments = Appointment::where('patient_id', $request->user()->id)
+        ->with(['doctor', 'doctor.doctorProfile'])
+        ->get();
 
-        if ($user->role === 'doctor') {
-
-            $appointments = Appointment::where('doctor_id', $user->id)
-                ->with('patient')
-                ->orderBy('scheduled_at')
-                ->get();
-
-        } else {
-
-            // patient_id لحاله مش كافي للتمييز (ممكن يتصادف نفس الرقم مع مريض مسجل من الاستقبال)
-            $appointments = Appointment::where('patient_id', $user->id)
-                ->where('patient_type', User::class)
-                ->with('doctor')
-                ->orderBy('scheduled_at')
-                ->get();
-
-        }
-
-        return response()->json([
-            'message' => 'تم استرجاع مواعيدك بنجاح',
-            'data' => $appointments,
-        ]);
-    }
+    return response()->json([
+        'message' => 'تم استرجاع مواعيدك بنجاح',
+        'data' => $appointments,
+    ], 200);
+}
     // public function index()
     // {
     //     // الحصول على معرف الطبيب المسجل حالياً
@@ -425,4 +408,21 @@ class AppointmentController extends Controller
         'data' => $order
     ], 200);
 }
+public function updateStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|in:pending,confirmed,completed,cancelled',
+        ]);
+
+        $appointment = Appointment::where('doctor_id', auth()->id())->findOrFail($id);
+        
+        $appointment->update([
+            'status' => $request->status,
+        ]);
+
+        return response()->json([
+            'message' => 'تم تحديث حالة الموعد بنجاح',
+            'data' => $appointment,
+        ], 200);
+    }
 }
