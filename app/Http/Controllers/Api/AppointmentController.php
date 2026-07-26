@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
+use App\Models\LabOrder;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class AppointmentController extends Controller

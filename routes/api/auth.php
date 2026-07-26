@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AdminAuthController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\DoctorAuthController;
+use App\Http\Controllers\Api\GoogleAuthController;
 use App\Http\Controllers\Api\PatientAuthController;
 use App\Http\Controllers\Api\PatientController;
 use App\Http\Controllers\Api\StaffAuthController;
@@ -14,6 +15,10 @@ Route::prefix('auth')->group(function () {
     Route::post('/patient/login', [PatientAuthController::class, 'login']);
     Route::post('/patient/forgot-password', [PatientAuthController::class, 'forgotPassword']);
     Route::post('/patient/reset-password', [PatientAuthController::class, 'resetPassword']);
+
+    // زر "المتابعة بـ Google" بصفحتي تسجيل الدخول/الحساب الجديد للمريض
+    Route::get('/google/redirect', [GoogleAuthController::class, 'redirect']);
+    Route::get('/google/callback', [GoogleAuthController::class, 'callback']);
 
  
     Route::post('/doctor/register', [DoctorAuthController::class, 'register']);
