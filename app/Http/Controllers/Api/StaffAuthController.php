@@ -15,7 +15,7 @@ class StaffAuthController extends Controller
         $request->validate([
             'email'    => 'required|email',
             'password' => 'required',
-            'role'     => 'required|in:reception,laboratory,pharmacy',
+            'role'     => 'required|in:reception,laboratory,pharmacy,radiology,inventory_manager',
         ]);
 
         $user = User::where('email', $request->email)->first();

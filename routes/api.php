@@ -10,14 +10,14 @@ use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\DoctorAuthController;
 use App\Http\Controllers\Api\DoctorController;
+use App\Http\Controllers\Api\InventoryController;
+use App\Http\Controllers\Api\InventoryOperationController;
+use App\Http\Controllers\Api\LabOrderController;
 use App\Http\Controllers\Api\LandingController;
+use App\Http\Controllers\Api\OfferController;
 use App\Http\Controllers\Api\PatientAuthController;
 use App\Http\Controllers\Api\PatientController;
 use App\Http\Controllers\Api\PharmacyController;
-use App\Http\Controllers\Api\OfferController;
-use App\Http\Controllers\Api\LabOrderController;
-
-
 use App\Http\Controllers\Api\Reception\ReceptionController;
 use Illuminate\Support\Facades\Route;
 
@@ -66,6 +66,17 @@ Route::prefix('laboratory')->group(function () {
     Route::post('/orders/{id}/start', [LabOrderController::class, 'start']);
     Route::post('/orders/{id}/complete', [LabOrderController::class, 'complete']);
     Route::post('/orders/{id}/redo', [LabOrderController::class, 'redo']);
+});
+
+Route::prefix('inventory')->group(function () {
+    Route::get('items', [InventoryController::class, 'index']);
+    Route::post('items', [InventoryController::class, 'store']);
+    Route::get('items/{inventory}', [InventoryController::class, 'show']);
+    Route::put('items/{inventory}', [InventoryController::class, 'update']);
+    Route::delete('items/{inventory}', [InventoryController::class, 'destroy']);
+    Route::post('items/{inventory}/adjust', [InventoryController::class, 'adjust']);
+
+    Route::get('operations', [InventoryOperationController::class, 'index']);
 });
 
 /**
