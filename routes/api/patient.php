@@ -11,8 +11,10 @@ Route::middleware(['auth:sanctum', 'checkRole:patient'])->prefix('patient')->gro
     Route::get('/medical-profile', [PatientController::class, 'getMedicalProfile']);
 
     Route::post('/appointments', [AppointmentController::class, 'store']);
-    Route::get('/appointments', [AppointmentController::class, 'index']);
+    Route::get('/appointments', [AppointmentController::class, 'getPatientAppointments']);
     Route::delete('/appointments/{id}', [AppointmentController::class, 'cancel']);
+    Route::get('/appointments/{id}', [AppointmentController::class, 'showPatientAppointment']);
+
     Route::patch('/appointments/{id}/reschedule', [AppointmentController::class, 'reschedule']);
     Route::post('/appointments/{id}/rate', [PatientController::class, 'storeRating']);
 

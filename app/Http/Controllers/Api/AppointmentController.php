@@ -11,7 +11,6 @@ use Illuminate\Http\Request;
 
 class AppointmentController extends Controller
 {
-    
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -33,9 +32,9 @@ class AppointmentController extends Controller
 
         // إنشاء الموعد - المريض هون هو صاحب حساب (User)، عكس مواعيد الاستقبال يلي بتحجز لـ Patient
         $appointment = Appointment::create([
-            'patient_id'   => $request->user()->id,
+            'patient_id' => $request->user()->id,
             'patient_type' => User::class,
-            'doctor_id'    => $validated['doctor_id'],
+            'doctor_id' => $validated['doctor_id'],
             'scheduled_at' => $validated['scheduled_at'],
             'status' => 'pending',
         ]);
@@ -46,37 +45,37 @@ class AppointmentController extends Controller
         ], 201);
     }
 
-   public function index(Request $request)
-{
-    // patient_type لازم كمان، وإلا ممكن نجيب موعد مريض استقبال بالصدفة إذا تصادف نفس الـ id
-    $appointments = Appointment::where('patient_id', $request->user()->id)
-        ->where('patient_type', User::class)
-        ->with(['doctor', 'doctor.doctorProfile'])
-        ->get();
+    public function getPatientAppointments(Request $request)
+    {
+        // patient_type لازم كمان، وإلا ممكن نجيب موعد مريض استقبال بالصدفة إذا تصادف نفس الـ id
+        $appointments = Appointment::where('patient_id', $request->user()->id)
+            ->where('patient_type', User::class)
+            ->with(['doctor', 'doctor.doctorProfile'])
+            ->get();
 
-    return response()->json([
-        'message' => 'تم استرجاع مواعيدك بنجاح',
-        'data' => $appointments,
-    ], 200);
-}
-    // public function index()
-    // {
-    //     // الحصول على معرف الطبيب المسجل حالياً
-    //     $doctorId = auth()->id();
+        return response()->json([
+            'message' => 'تم استرجاع مواعيدك بنجاح',
+            'data' => $appointments,
+        ], 200);
+    }
+    public function getDoctorAppointments()
+    {
+        // الحصول على معرف الطبيب المسجل حالياً
+        $doctorId = auth()->id();
 
-    //     // جلب المواعيد الخاصة بهذا الطبيب فقط مع بيانات المريض
-    //     $appointments = Appointment::where('doctor_id', $doctorId)
-    //         ->with('patient') // جلب بيانات المريض المرتبط بالموعد
-    //         ->orderBy('scheduled_at', 'asc') // ترتيب المواعيد من الأقدم للأحدث
-    //         ->get();
+        // جلب المواعيد الخاصة بهذا الطبيب فقط مع بيانات المريض
+        $appointments = Appointment::where('doctor_id', $doctorId)
+            ->with('patient') // جلب بيانات المريض المرتبط بالموعد
+            ->orderBy('scheduled_at', 'desc') // ترتيب المواعيد من الأقدم للأحدث
+            ->get();
 
-    //     return response()->json([
-    //         'message' => 'تم استرجاع مواعيدك بنجاح',
-    //         'data' => $appointments,
-    //     ], 200);
-    // }
+        return response()->json([
+            'message' => 'تم استرجاع مواعيدك بنجاح',
+            'data' => $appointments,
+        ], 200);
+    }
 
-    public function show($id)
+    public function showDoctorAppointment($id)
     {
         $doctorId = auth()->id();
 
@@ -322,24 +321,24 @@ class AppointmentController extends Controller
     {
         $doctorId = auth()->id();
 
-    // التأكد أن المريض لديه موعد مع هذا الطبيب، وناخد منه patient_type الصحيح
-    $appointment = Appointment::where('doctor_id', $doctorId)
-        ->where('patient_id', $id)
-        ->with('patient')
-        ->first();
+        // التأكد أن المريض لديه موعد مع هذا الطبيب، وناخد منه patient_type الصحيح
+        $appointment = Appointment::where('doctor_id', $doctorId)
+            ->where('patient_id', $id)
+            ->with('patient')
+            ->first();
 
-    if (!$appointment || !$appointment->patient) {
-        return response()->json(['message' => 'المريض غير موجود أو ليس لديك صلاحية لعرضه'], 404);
-    }
+        if (! $appointment || ! $appointment->patient) {
+            return response()->json(['message' => 'المريض غير موجود أو ليس لديك صلاحية لعرضه'], 404);
+        }
 
-    $patient = $appointment->patient;
+        $patient = $appointment->patient;
 
-    // جلب كل مواعيد هذا المريض (نفس patient_id ونفس patient_type) مع هذا الطبيب
-    $patientAppointments = Appointment::where('doctor_id', $doctorId)
-        ->where('patient_id', $id)
-        ->where('patient_type', $appointment->patient_type)
-        ->orderBy('scheduled_at', 'desc')
-        ->get();
+        // جلب كل مواعيد هذا المريض (نفس patient_id ونفس patient_type) مع هذا الطبيب
+        $patientAppointments = Appointment::where('doctor_id', $doctorId)
+            ->where('patient_id', $id)
+            ->where('patient_type', $appointment->patient_type)
+            ->orderBy('scheduled_at', 'desc')
+            ->get();
 
         // إرسال البيانات مجتمعة
         return response()->json([
@@ -427,38 +426,39 @@ class AppointmentController extends Controller
         return response()->json(['message' => 'تم إضافة تقييمك بنجاح. شكراً لك!'], 200);
     }
 
-   public function complete(Request $request, $id)
-{
-    $order = LabOrder::findOrFail($id);
-    
-    // التقاط أي بيانات قادمة من الفرونت إند فوراً دون أي قيود
-    $resultText = $request->input('result_text') 
-               ?? $request->input('resultText') 
-               ?? $request->input('result') 
-               ?? $request->input('notes') 
-               ?? '—';
+    public function complete(Request $request, $id)
+    {
+        $order = LabOrder::findOrFail($id);
 
-    $order->update([
-        'status' => 'completed',
-        'result_text' => is_array($resultText) ? json_encode($resultText) : $resultText,
-        'completed_by' => $request->input('completed_by') ?? 'فني مختبر',
-        'completed_at' => now(),
-    ]);
+        // التقاط أي بيانات قادمة من الفرونت إند فوراً دون أي قيود
+        $resultText = $request->input('result_text')
+                   ?? $request->input('resultText')
+                   ?? $request->input('result')
+                   ?? $request->input('notes')
+                   ?? '—';
 
-    return response()->json([
-        'status' => true,
-        'message' => 'تم إرسال النتيجة بنجاح',
-        'data' => $order
-    ], 200);
-}
-public function updateStatus(Request $request, $id)
+        $order->update([
+            'status' => 'completed',
+            'result_text' => is_array($resultText) ? json_encode($resultText) : $resultText,
+            'completed_by' => $request->input('completed_by') ?? 'فني مختبر',
+            'completed_at' => now(),
+        ]);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'تم إرسال النتيجة بنجاح',
+            'data' => $order,
+        ], 200);
+    }
+
+    public function updateStatus(Request $request, $id)
     {
         $request->validate([
             'status' => 'required|in:pending,confirmed,completed,cancelled',
         ]);
 
         $appointment = Appointment::where('doctor_id', auth()->id())->findOrFail($id);
-        
+
         $appointment->update([
             'status' => $request->status,
         ]);
@@ -468,4 +468,23 @@ public function updateStatus(Request $request, $id)
             'data' => $appointment,
         ], 200);
     }
+
+
+    public function showPatientAppointment($id, Request $request)
+{
+    $appointment = Appointment::where('id', $id)
+        ->where('patient_id', $request->user()->id)
+        ->with([
+            'doctor', 
+            'doctor.doctorProfile', 
+            'prescription', 
+            'medicalRecord'
+        ])
+        ->firstOrFail();
+
+    return response()->json([
+        'status' => true,
+        'data' => $appointment
+    ], 200);
+}
 }

@@ -15,12 +15,7 @@ class ChatController extends Controller
         $appointment = Appointment::findOrFail($appointmentId);
         $userId = $request->user()->id;
 
-        dd([
-            'logged_in_user_id' => $userId,
-            'appointment_doctor_id' => $appointment->doctor_id,
-            'appointment_patient_id' => $appointment->patient_id,
-        ]);
-
+        
         // تأكد إن المستخدم الحالي هو فعلاً طرف بهاي الموعد
         if ($appointment->doctor_id !== $userId && $appointment->patient_id !== $userId) {
             return response()->json(['message' => 'غير مصرح لك'], 403);

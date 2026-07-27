@@ -13,8 +13,8 @@ Route::middleware(['auth:sanctum', 'checkRole:doctor'])->prefix('doctor')->group
 
     Route::post('/profile/change-password', [DoctorController::class, 'changePassword']);
 
-    Route::get('/appointments', [AppointmentController::class, 'index']);
-    Route::get('/appointments/{id}', [AppointmentController::class, 'show']);
+    Route::get('/appointments', [AppointmentController::class, 'getDoctorAppointments']);
+    Route::get('/appointments/{id}', [AppointmentController::class, 'showDoctorAppointment']);
     Route::patch('/appointments/{id}/status', [AppointmentController::class, 'updateStatus']);
 
     Route::delete('/appointments/{id}', [AppointmentController::class, 'cancel']);
