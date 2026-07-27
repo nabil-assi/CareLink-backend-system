@@ -11,6 +11,16 @@ use Illuminate\Http\Request;
 
 class AppointmentController extends Controller
 {
+    public function index()
+    {
+        $appointments = Appointment::with(['patient', 'doctor', 'rating'])->latest()->get();
+
+        return response()->json([
+            'message' => 'تم استرجاع جميع المواعيد بنجاح',
+            'data' => $appointments,
+        ], 200);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -58,6 +68,7 @@ class AppointmentController extends Controller
             'data' => $appointments,
         ], 200);
     }
+
     public function getDoctorAppointments()
     {
         // الحصول على معرف الطبيب المسجل حالياً
@@ -469,22 +480,21 @@ class AppointmentController extends Controller
         ], 200);
     }
 
-
     public function showPatientAppointment($id, Request $request)
-{
-    $appointment = Appointment::where('id', $id)
-        ->where('patient_id', $request->user()->id)
-        ->with([
-            'doctor', 
-            'doctor.doctorProfile', 
-            'prescription', 
-            'medicalRecord'
-        ])
-        ->firstOrFail();
+    {
+        $appointment = Appointment::where('id', $id)
+            ->where('patient_id', $request->user()->id)
+            ->with([
+                'doctor',
+                'doctor.doctorProfile',
+                'prescription',
+                'medicalRecord',
+            ])
+            ->firstOrFail();
 
-    return response()->json([
-        'status' => true,
-        'data' => $appointment
-    ], 200);
-}
+        return response()->json([
+            'status' => true,
+            'data' => $appointment,
+        ], 200);
+    }
 }

@@ -13,8 +13,8 @@ class PostController extends Controller
     {
         // جلب كل المنشورات للأدمن (المقبولة والمعلقة)
         // لا تستخدم where('is_approved', true) هنا، لأن الأدمن يحتاج لرؤية الكل!
-        $posts = Post::latest()->get();
-
+  //      $posts = Post::latest()->get();
+$posts = Post::with('user')->latest()->get();
         return response()->json(['data' => $posts]);
     }
 

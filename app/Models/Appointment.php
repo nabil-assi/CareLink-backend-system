@@ -36,9 +36,14 @@ class Appointment extends Model
         return $this->hasOne(MedicalRecord::class);
     }
 
-    public function ratings()
+  //  public function ratings()
+   // {
+    //    return $this->hasMany(DoctorRating::class, 'doctor_id');
+   // }
+
+    public function rating()
     {
-        return $this->hasMany(DoctorRating::class, 'doctor_id');
+        return $this->hasOne(DoctorRating::class, 'appointment_id');
     }
 
     public function getAverageRatingAttribute()
