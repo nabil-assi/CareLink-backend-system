@@ -5,11 +5,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\Broadcast;
-use App\Models\MedicalRecord;
-use App\Models\User;
+use App\Models\DoctorRating;
 use App\Models\PatientProfile;
-use Illuminate\Support\Facades\Storage;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class PatientController extends Controller
 {
@@ -19,10 +19,10 @@ class PatientController extends Controller
 
         return response()->json([
             'status' => true,
-            'data' => $doctors
+            'data' => $doctors,
         ], 200);
     }
-    
+
     public function getAllPatients()
     {
         $patients = User::where('role', 'patient')
@@ -62,8 +62,6 @@ class PatientController extends Controller
             'emergency_contact_phone' => 'nullable|string',
         ]);
 
-
-
         auth()->user()->patientProfile()->updateOrCreate(
             ['user_id' => auth()->id()],
             $validated
@@ -79,7 +77,7 @@ class PatientController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:users,email,' . $request->user()->id,
+            'email' => 'required|email|max:255|unique:users,email,'.$request->user()->id,
             'phone' => 'nullable|string|max:20',
             'national_id' => 'nullable|string',
             'birth_date' => 'nullable|date',
@@ -140,40 +138,79 @@ class PatientController extends Controller
         return response()->json(['data' => $broadcasts], 200);
     }
 
-public function updateProfilePicture(Request $request)
-{
-    try {
+    public function updateProfilePicture(Request $request)
+    {
+        try {
 
+            $request->validate([
+                'profile_picture' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+            ]);
+
+            $user = $request->user();
+
+            if ($user->profile_picture) {
+                Storage::disk('public')->delete($user->profile_picture);
+            }
+
+            $path = $request->file('profile_picture')
+                ->store('profile_pictures', 'public');
+
+            $user->update([
+                'profile_picture' => $path,
+            ]);
+
+            return response()->json([
+                'message' => 'تم تحديث الصورة الشخصية',
+                'profile_picture' => asset('storage/'.$path),
+            ]);
+
+        } catch (\Throwable $e) {
+
+            return response()->json([
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+            ], 500);
+
+        }
+    }
+
+    public function storeRating(Request $request, $doctorId)
+    {
         $request->validate([
-            'profile_picture' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+            'rating' => 'required|integer|min:1|max:5',
+            'comment' => 'nullable|string|max:500',
+            'appointment_id' => 'required|exists:appointments,id',
         ]);
 
-        $user = $request->user();
+        // التحقق هل تم تقييم هذا الموعد مسبقاً
+        $exists = DoctorRating::where('patient_id', $request->user()->id)
+            ->where('appointment_id', $request->appointment_id)
+            ->exists();
 
-        if ($user->profile_picture) {
-            Storage::disk('public')->delete($user->profile_picture);
+        if ($exists) {
+            return response()->json([
+                'status' => false,
+                'message' => 'لقد قمت بتقييم هذا الموعد مسبقاً',
+            ], 422);
         }
 
-        $path = $request->file('profile_picture')
-            ->store('profile_pictures', 'public');
-
-        $user->update([
-            'profile_picture' => $path,
-        ]);
-
-        return response()->json([
-            'message' => 'تم تحديث الصورة الشخصية',
-            'profile_picture' => asset('storage/' . $path),
-        ]);
-
-    } catch (\Throwable $e) {
+        $rating = DoctorRating::updateOrCreate(
+            [
+                'patient_id' => $request->user()->id,
+                'doctor_id' => $doctorId,
+                'appointment_id' => $request->appointment_id,
+            ],
+            [
+                'rating' => $request->rating,
+                'comment' => $request->comment,
+            ]
+        );
 
         return response()->json([
-            'message' => $e->getMessage(),
-            'line' => $e->getLine(),
-            'file' => $e->getFile(),
-        ], 500);
-
+            'status' => true,
+            'message' => 'تم حفظ التقييم بنجاح',
+            'data' => $rating,
+        ], 200);
     }
-}
 }
