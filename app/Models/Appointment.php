@@ -46,10 +46,10 @@ class Appointment extends Model
         return $this->hasOne(DoctorRating::class, 'appointment_id');
     }
 
-    public function getAverageRatingAttribute()
-    {
-        return $this->ratings()->avg('rating') ? number_format($this->ratings()->avg('rating'), 1) : 0;
-    }
+    // ملاحظة: "متوسط التقييم" منطقياً حق الطبيب (كل مواعيده مع بعض)، مش الموعد
+    // الواحد (يلي إله تقييم واحد بس عن طريق rating() فوق). النسخة الصح موجودة
+    // بموديل User::getAverageRatingAttribute() - كانت هون بتنادي ratings() يلي
+    // انحذفت (مبقاش عندها Appointment doctor_id) فكانت رح تطلع خطأ لو استخدمت
 
 
     // أضف هذه العلاقات داخل نموذج Appointment
