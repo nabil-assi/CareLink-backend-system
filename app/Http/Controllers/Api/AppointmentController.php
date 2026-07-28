@@ -22,39 +22,42 @@ class AppointmentController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'doctor_id' => 'required|exists:users,id,role,doctor',
-            'scheduled_at' => 'required|date',
-        ]);
+{
+    $validated = $request->validate([
+        'doctor_id' => 'required|exists:users,id,role,doctor',
+        'scheduled_at' => 'required|date',
+        'type' => 'sometimes|in:online,in_person', // التحقق من نوع الموعد
+        'description' => 'nullable|string|max:500', // التحقق من الوصف
+    ]);
 
-        // التحقق إذا كان الموعد محجوزاً مسبقاً
-        $exists = Appointment::where('doctor_id', $validated['doctor_id'])
-            ->where('scheduled_at', $validated['scheduled_at'])
-            ->whereIn('status', ['pending', 'scheduled'])
-            ->exists();
+    // التحقق إذا كان الموعد محجوزاً مسبقاً
+    $exists = Appointment::where('doctor_id', $validated['doctor_id'])
+        ->where('scheduled_at', $validated['scheduled_at'])
+        ->whereIn('status', ['pending', 'scheduled'])
+        ->exists();
 
-        if ($exists) {
-            return response()->json([
-                'message' => 'هذا الموعد محجوز مسبقاً',
-            ], 409);
-        }
-
-        // إنشاء الموعد - المريض هون هو صاحب حساب (User)، عكس مواعيد الاستقبال يلي بتحجز لـ Patient
-        $appointment = Appointment::create([
-            'patient_id' => $request->user()->id,
-            'patient_type' => User::class,
-            'doctor_id' => $validated['doctor_id'],
-            'scheduled_at' => $validated['scheduled_at'],
-            'status' => 'pending',
-        ]);
-
+    if ($exists) {
         return response()->json([
-            'message' => 'تم حجز الموعد بنجاح',
-            'data' => $appointment,
-        ], 201);
+            'message' => 'هذا الموعد محجوز مسبقاً',
+        ], 409);
     }
 
+    // إنشاء الموعد مع حفظ النوع والوصف المرسل من الواجهة الأمامية
+    $appointment = Appointment::create([
+        'patient_id' => $request->user()->id,
+        'patient_type' => User::class,
+        'doctor_id' => $validated['doctor_id'],
+        'scheduled_at' => $validated['scheduled_at'],
+        'type' => $validated['type'] ?? 'in_person', // حفظ النوع أو افتراضي
+        'description' => $validated['description'] ?? null, // حفظ الوصف
+        'status' => 'pending',
+    ]);
+
+    return response()->json([
+        'message' => 'تم حجز الموعد بنجاح',
+        'data' => $appointment,
+    ], 201);
+}
     public function getPatientAppointments(Request $request)
     {
         // patient_type لازم كمان، وإلا ممكن نجيب موعد مريض استقبال بالصدفة إذا تصادف نفس الـ id
@@ -303,24 +306,36 @@ class AppointmentController extends Controller
         ]);
     }
 
-    public function doctorPatients()
+public function doctorPatients()
     {
         $doctorId = auth()->id();
 
-        // المريض ممكن يكون User (حجز بنفسه) أو Patient (سجله الاستقبال)، فبنعتمد
-        // على العلاقة polymorphic ($appointment->patient) بدل ما نفترض جدول واحد بس
         $patients = Appointment::where('doctor_id', $doctorId)
-            ->with('patient')
+            ->with(['patient', 'patient.patientProfile']) // جلب بروفايل المريض إن وجد
             ->get()
             ->pluck('patient')
             ->filter()
             ->unique(fn ($patient) => get_class($patient).':'.$patient->id)
             ->values()
-            ->map(fn ($patient) => [
-                'id' => $patient->id,
-                'full_name' => $patient->full_name ?? $patient->name ?? 'مريض',
-                'phone' => $patient->phone ?? null,
-            ]);
+            ->map(function ($patient) {
+                // محاولة جلب فصيلة الدم سواء كان المريض User أو Patient
+                $bloodType = null;
+                
+                if (method_exists($patient, 'patientProfile') && $patient->patientProfile) {
+                    $bloodType = $patient->patientProfile->blood_type;
+                } elseif (isset($patient->blood_type)) {
+                    $bloodType = $patient->blood_type;
+                }
+
+                return [
+                    'id' => $patient->id,
+                    'full_name' => $patient->full_name ?? $patient->name ?? 'مريض',
+                    'phone' => $patient->phone ?? null,
+                    'email' => $patient->email ?? null,
+                    'blood_type' => $bloodType,
+                    'national_id' => $patient->national_id ?? $patient->nationalId ?? null,
+                ];
+            });
 
         return response()->json([
             'message' => 'تم استرجاع قائمة المرضى بنجاح',
@@ -332,11 +347,18 @@ class AppointmentController extends Controller
     {
         $doctorId = auth()->id();
 
-        // التأكد أن المريض لديه موعد مع هذا الطبيب، وناخد منه patient_type الصحيح
-        $appointment = Appointment::where('doctor_id', $doctorId)
-            ->where('patient_id', $id)
-            ->with('patient')
-            ->first();
+        // جلب جميع مواعيد هذا الطبيب مع مرضاهم
+        $appointments = Appointment::where('doctor_id', $doctorId)
+            ->with(['patient', 'patient.patientProfile'])
+            ->get();
+
+        // البحث عن الموعد الذي يطابق المريض المطلوبة (سواء كان ID المريض أو ID الـ User المرتبط)
+        $appointment = $appointments->first(function ($apt) use ($id) {
+            return $apt->patient && (
+                $apt->patient->id == $id || 
+                (isset($apt->patient->user_id) && $apt->patient->user_id == $id)
+            );
+        });
 
         if (! $appointment || ! $appointment->patient) {
             return response()->json(['message' => 'المريض غير موجود أو ليس لديك صلاحية لعرضه'], 404);
@@ -344,22 +366,29 @@ class AppointmentController extends Controller
 
         $patient = $appointment->patient;
 
-        // جلب كل مواعيد هذا المريض (نفس patient_id ونفس patient_type) مع هذا الطبيب
+        // جلب كل مواعيد هذا المريض المحدد مع هذا الطبيب
         $patientAppointments = Appointment::where('doctor_id', $doctorId)
-            ->where('patient_id', $id)
-            ->where('patient_type', $appointment->patient_type)
+            ->where('patient_id', $patient->id)
             ->orderBy('scheduled_at', 'desc')
             ->get();
 
-        // إرسال البيانات مجتمعة
+        // استخراج فصيلة الدم بأمان
+        $bloodType = null;
+        if (method_exists($patient, 'patientProfile') && $patient->patientProfile) {
+            $bloodType = $patient->patientProfile->blood_type;
+        } elseif (isset($patient->blood_type)) {
+            $bloodType = $patient->blood_type;
+        }
+
         return response()->json([
             'message' => 'تم استرجاع تفاصيل المريض بنجاح',
             'data' => [
                 'id' => $patient->id,
                 'full_name' => $patient->full_name ?? $patient->name ?? 'مريض',
-                'phone' => $patient->phone,
-                'national_id' => $patient->national_id ?? null,
-                'blood_type' => $patient->blood_type ?? null,
+                'phone' => $patient->phone ?? null,
+                'email' => $patient->email ?? null,
+                'national_id' => $patient->national_id ?? $patient->nationalId ?? null,
+                'blood_type' => $bloodType,
                 'appointments' => $patientAppointments,
             ],
         ], 200);

@@ -26,10 +26,10 @@ class Appointment extends Model
         return $this->belongsTo(User::class, 'doctor_id');
     }
 
-    public function prescription(): HasOne
-    {
-        return $this->hasOne(Prescription::class);
-    }
+   // public function prescription(): HasOne
+    //{
+     //   return $this->hasOne(Prescription::class);
+   // }
 
     public function medicalRecord()
     {
@@ -49,5 +49,22 @@ class Appointment extends Model
     public function getAverageRatingAttribute()
     {
         return $this->ratings()->avg('rating') ? number_format($this->ratings()->avg('rating'), 1) : 0;
+    }
+
+
+    // أضف هذه العلاقات داخل نموذج Appointment
+    public function labOrders()
+    {
+        return $this->hasMany(LabOrder::class, 'appointment_id');
+    }
+
+    public function imagingOrders()
+    {
+        return $this->hasMany(ImagingOrder::class, 'appointment_id');
+    }
+
+    public function prescription()
+    {
+        return $this->hasOne(Prescription::class, 'appointment_id');
     }
 }

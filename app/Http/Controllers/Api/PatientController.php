@@ -10,6 +10,7 @@ use App\Models\PatientProfile;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use App\Models\LabOrder;
 
 class PatientController extends Controller
 {
@@ -115,10 +116,18 @@ class PatientController extends Controller
         ], 200);
     }
 
-    public function myMedicalRecords(Request $request)
+public function myMedicalRecords(Request $request)
     {
-        $records = Appointment::where('patient_id', $request->user()->id)
-            ->where('status', 'completed')
+        $patientId = $request->user()->id;
+
+        // جلب المواعيد
+        $records = Appointment::where('patient_id', $patientId)
+            ->with('doctor:id,name')
+            ->latest()
+            ->get();
+
+        // جلب تحاليل المريض مباشرة
+        $labs = LabOrder::where('patient_id', $patientId)
             ->with('doctor:id,name')
             ->latest()
             ->get();
@@ -126,6 +135,7 @@ class PatientController extends Controller
         return response()->json([
             'message' => 'تم استرجاع السجلات الطبية',
             'data' => $records,
+            'labs' => $labs, // إرسال التحاليل مع الـ Response
         ]);
     }
 
