@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\LabOrder;
+use App\Models\Notification;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
@@ -35,7 +37,7 @@ class LabOrderController extends Controller
         return response()->json(['status' => true, 'data' => $orders], 200);
     }
 
-    // بدء التنفيذ (تغيير الحالة إلى in_progress)
+    // بدء التنفيذ (تغيير الحالة إلى in_progress) - بدون إشعار
     public function start($id, Request $request)
     {
         $order = LabOrder::findOrFail($id);
@@ -44,7 +46,7 @@ class LabOrderController extends Controller
         return response()->json(['message' => 'تم بدء التنفيذ بنجاح', 'data' => $order]);
     }
 
-    // إرسال النتيجة واكتمال الطلب (completed)
+    // إرسال النتيجة واكتمال الطلب (completed) - هون بس يصير الإشعار
     public function complete($id, Request $request)
     {
         $request->validate([
@@ -60,10 +62,18 @@ class LabOrderController extends Controller
             'completed_at' => now(),
         ]);
 
+        Notification::create([
+            'type' => 'lab_ready',
+            'title' => 'نتيجة تحليل جاهزة',
+            'body' => 'نتيجة تحليلك (' . $order->tests . ') أصبحت جاهزة',
+            'notifiable_id' => $order->patient_id,
+            'notifiable_type' => User::class,
+        ]);
+
         return response()->json(['message' => 'تم إرسال النتيجة بنجاح', 'data' => $order]);
     }
 
-    // إعادة العينة أو رفضها (rejected أو redo)
+    // إعادة العينة أو رفضها (rejected أو redo) - بدون إشعار
     public function redo($id, Request $request)
     {
         $request->validate([
@@ -73,7 +83,7 @@ class LabOrderController extends Controller
         $order = LabOrder::findOrFail($id);
         $order->update([
             'status' => 'rejected',
-            'notes' => $request->reason, // أو حفظ سبب الرفض
+            'notes' => $request->reason,
         ]);
 
         return response()->json(['message' => 'تم توثيق رفض/إعادة العينة بنجاح', 'data' => $order]);

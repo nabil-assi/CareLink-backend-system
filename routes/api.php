@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\InventoryController;
 use App\Http\Controllers\Api\InventoryOperationController;
 use App\Http\Controllers\Api\LabOrderController;
 use App\Http\Controllers\Api\LandingController;
+use App\Http\Controllers\Api\MyNotificationController;
 use App\Http\Controllers\Api\OfferController;
 use App\Http\Controllers\Api\PatientAuthController;
 use App\Http\Controllers\Api\PatientController;
@@ -86,6 +87,14 @@ Route::prefix('inventory')->group(function () {
     Route::post('items/{inventory}/adjust', [InventoryController::class, 'adjust']);
 
     Route::get('operations', [InventoryOperationController::class, 'index']);
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/notifications/mine', [MyNotificationController::class, 'index']);
+    Route::get('/notifications/unread-count', [MyNotificationController::class, 'unreadCount']);
+    Route::post('/notifications/{id}/read', [MyNotificationController::class, 'markAsRead']);
+    Route::post('/notifications/read-all', [MyNotificationController::class, 'markAllAsRead']);
+    Route::get('/chat/unread-counts', [ChatController::class, 'unreadCounts']);
 });
 
 /**
