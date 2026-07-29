@@ -3,7 +3,9 @@
 use App\Http\Controllers\Api\Reception\ReceptionController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('auth:sanctum')->prefix('reception')->group(function () {
+// كانت بس auth:sanctum (أي حساب مسجل دخول، مش موظف استقبال تحديداً) - ضفنا
+// checkRole زي باقي الأدوار
+Route::middleware(['auth:sanctum', 'checkRole:reception'])->prefix('reception')->group(function () {
     Route::get('/patients', [ReceptionController::class, 'listPatients']);
     Route::post('/register-and-book', [ReceptionController::class, 'registerAndBook']);
 

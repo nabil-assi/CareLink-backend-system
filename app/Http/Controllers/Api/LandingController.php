@@ -32,7 +32,15 @@ class LandingController extends Controller
             $doctors = User::where('role', 'doctor')
                 ->orWhereNotNull('specialty')
                 ->select('id', 'name', 'email', 'phone', 'specialty', 'profile_picture', 'status')
-                ->get();
+                ->get()
+                // average_rating accessor موجود بالموديل بس مش appended تلقائياً
+                // بالـ JSON، فبنضيفه يدوياً هون عشان يوصل للفرونت
+                ->map(function ($doctor) {
+                    $doctor->average_rating = $doctor->average_rating;
+                    $doctor->reviews_count = $doctor->ratings()->count();
+
+                    return $doctor;
+                });
 
             return response()->json([
                 'data' => $doctors,
