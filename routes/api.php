@@ -71,17 +71,25 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 Route::post('/reception/patients', [ReceptionController::class, 'registerPatient']);
 
-Route::prefix('laboratory')->group(function () {
+// كانت هاي المسارات مفتوحة من غير تسجيل دخول إطلاقاً - أي حد بيقدر يشوف/يعدل
+// نتائج التحاليل. ضفنا نفس الحماية (auth:sanctum + checkRole) يلي عند باقي الأدوار
+Route::middleware(['auth:sanctum', 'checkRole:laboratory'])->prefix('laboratory')->group(function () {
     Route::get('/orders', [LabOrderController::class, 'index']);
     Route::post('/orders/{id}/start', [LabOrderController::class, 'start']);
     Route::post('/orders/{id}/complete', [LabOrderController::class, 'complete']);
     Route::post('/orders/{id}/redo', [LabOrderController::class, 'redo']);
 });
 
-Route::prefix('inventory')->group(function () {
+// نفس الشي هون - كانت مفتوحة لأي حد يعدل كميات وأسعار المخزون بدون تسجيل دخول.
+// القراءة بس (عرض الأصناف) مسموحة لمدير المخزون والصيدلية سوا، لأنه شاشة
+// "توفر المخزون" بالصيدلية بتعتمد على GET items. التعديل/الحذف مقصور على مدير المخزون فقط.
+Route::middleware(['auth:sanctum', 'checkRole:inventory_manager,pharmacy'])->prefix('inventory')->group(function () {
     Route::get('items', [InventoryController::class, 'index']);
-    Route::post('items', [InventoryController::class, 'store']);
     Route::get('items/{inventory}', [InventoryController::class, 'show']);
+});
+
+Route::middleware(['auth:sanctum', 'checkRole:inventory_manager'])->prefix('inventory')->group(function () {
+    Route::post('items', [InventoryController::class, 'store']);
     Route::put('items/{inventory}', [InventoryController::class, 'update']);
     Route::delete('items/{inventory}', [InventoryController::class, 'destroy']);
     Route::post('items/{inventory}/adjust', [InventoryController::class, 'adjust']);

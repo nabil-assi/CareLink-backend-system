@@ -220,12 +220,10 @@ class AppointmentController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        // يمكنك جلب الموعد لمعرفة المريض والطبيب المرتبطين به
-        // $appointment = Appointment::findOrFail($id);
-
+        // المريض هلق بينجلب من الموعد نفسه (appointment->patient) مش من الـ request -
+        // appointment_id صار عمود حقيقي بجدول lab_orders ويدعم مريض الاستقبال والحساب الذاتي سوا
         $labOrder = LabOrder::create([
-            'appointment_id' => $id, // أضف حقل appointment_id إذا لم يكن موجوداً في جدول lab_orders
-            'patient_id' => $request->patient_id, // أو جلبها من الموعد
+            'appointment_id' => $id,
             'doctor_id' => auth()->id(),
             'tests' => $request->tests,
             'clinical_reason' => $request->notes ?? 'طلب فحص طبي من الطبيب المعالج',

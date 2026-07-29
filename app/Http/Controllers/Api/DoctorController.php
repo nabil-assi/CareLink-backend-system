@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Appointment;
  use App\Models\Broadcast;
 use App\Models\Conversation;
+use App\Models\ImagingOrder;
+use App\Models\LabOrder;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -188,9 +190,46 @@ class DoctorController extends Controller
         ];
     });
 
+    // نتائج التحاليل/الأشعة الجاهزة يلي محتاجة مراجعة الطبيب - حقيقية بالكامل
+    // (لا يوجد مفهوم "قيمة حرجة" أو "مقفل" بالسكيما الحقيقية الحالية، فبنسيبهم فاضيين)
+    $labs = LabOrder::where('doctor_id', $doctorId)
+        ->where('status', 'completed')
+        ->with('appointment.patient')
+        ->latest()
+        ->take(5)
+        ->get()
+        ->map(fn ($order) => [
+            'id' => $order->id,
+            'appointmentId' => $order->appointment_id,
+            'patientId' => $order->resolvePatient()?->id,
+            'patientName' => $order->resolvePatient()->full_name ?? $order->resolvePatient()->name ?? 'مريض',
+            'tests' => $order->tests,
+            'hasCritical' => false,
+        ]);
+
+    $imaging = ImagingOrder::where('doctor_id', $doctorId)
+        ->where('status', 'completed')
+        ->with('appointment.patient')
+        ->latest()
+        ->take(5)
+        ->get()
+        ->map(fn ($order) => [
+            'id' => $order->id,
+            'appointmentId' => $order->appointment_id,
+            'patientId' => $order->resolvePatient()?->id,
+            'patientName' => $order->resolvePatient()->full_name ?? $order->resolvePatient()->name ?? 'مريض',
+            'studies' => $order->studies,
+        ]);
+
     return response()->json([
         'message' => 'تم استرجاع بيانات الصفحة الرئيسية بنجاح',
         'data' => $formattedAppointments,
+        'readyResults' => [
+            'labs' => $labs,
+            'imaging' => $imaging,
+            'criticalLabs' => [],
+            'readyCount' => $labs->count() + $imaging->count(),
+        ],
     ], 200);
 }
 }

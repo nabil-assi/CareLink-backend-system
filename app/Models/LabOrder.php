@@ -12,7 +12,7 @@ class LabOrder extends Model
     use HasFactory;
 
     protected $fillable = [
-        'patient_id',
+        'appointment_id',
         'doctor_id',
         'tests',
         'sample_id',
@@ -25,10 +25,16 @@ class LabOrder extends Model
         'completed_at',
     ];
 
-    // علاقة المريض
-    public function patient()
+    public function appointment()
     {
-        return $this->belongsTo(User::class, 'patient_id');
+        return $this->belongsTo(Appointment::class);
+    }
+
+    // اسمها مش patient() قصداً (زي ImagingOrder) - مش علاقة Eloquent حقيقية،
+    // المريض ممكن يكون User (حجز بنفسه) أو Patient (سجله الاستقبال) حسب الموعد
+    public function resolvePatient()
+    {
+        return $this->appointment?->patient;
     }
 
     // علاقة الطبيب

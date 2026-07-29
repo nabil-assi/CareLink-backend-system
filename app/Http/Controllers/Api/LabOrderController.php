@@ -14,12 +14,14 @@ class LabOrderController extends Controller
     // جلب جميع طلبات التحاليل للمختبر
     public function index()
     {
-        $orders = LabOrder::with(['patient', 'doctor'])->latest()->get()->map(function ($order) {
+        $orders = LabOrder::with(['appointment.patient', 'doctor'])->latest()->get()->map(function ($order) {
+            $patient = $order->resolvePatient();
+
             return [
                 'id' => $order->id,
-                'patient' => $order->patient->name ?? 'مريض غير معروف',
-                'patientAge' => $order->patient->birth_date ? Carbon::parse($order->patient->birth_date)->age : null,
-                'patientGender' => $order->patient->gender ?? null,
+                'patient' => $patient->full_name ?? $patient->name ?? 'مريض غير معروف',
+                'patientAge' => $patient?->birth_date ? Carbon::parse($patient->birth_date)->age : null,
+                'patientGender' => $patient->gender ?? null,
                 'doctor' => $order->doctor->name ?? 'طبيب غير معروف',
                 'tests' => $order->tests,
                 'sampleId' => $order->sample_id,
@@ -62,13 +64,18 @@ class LabOrderController extends Controller
             'completed_at' => now(),
         ]);
 
-        Notification::create([
-            'type' => 'lab_ready',
-            'title' => 'نتيجة تحليل جاهزة',
-            'body' => 'نتيجة تحليلك (' . $order->tests . ') أصبحت جاهزة',
-            'notifiable_id' => $order->patient_id,
-            'notifiable_type' => User::class,
-        ]);
+        // بس المريض يلي عنده حساب حقيقي (User) بقدر يشوف إشعارات - مريض الاستقبال
+        // (Patient) ما إله حساب دخول أصلاً فما في محل نعمله إشعار
+        $patient = $order->resolvePatient();
+        if ($patient instanceof User) {
+            Notification::create([
+                'type' => 'lab_ready',
+                'title' => 'نتيجة تحليل جاهزة',
+                'body' => 'نتيجة تحليلك (' . $order->tests . ') أصبحت جاهزة',
+                'notifiable_id' => $patient->id,
+                'notifiable_type' => User::class,
+            ]);
+        }
 
         return response()->json(['message' => 'تم إرسال النتيجة بنجاح', 'data' => $order]);
     }
