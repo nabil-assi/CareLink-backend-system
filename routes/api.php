@@ -47,15 +47,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // Route::get('/conversations/{conversationId}/messages', [ChatController::class, 'getMessages']);
     // Route::post('/conversations/{conversationId}/messages', [ChatController::class, 'sendMessage']);
 
-    Route::get('/admin/posts', [PostController::class, 'index']);
-    Route::post('/admin/posts', [PostController::class, 'store']);
-    Route::delete('/admin/posts/{id}', [PostController::class, 'destroy']);
-    Route::patch('/admin/posts/{id}/approve', [PostController::class, 'approve']);
-
-    Route::get('/admin/patients', [PatientController::class, 'getAllPatients']);
-
-    Route::get('/admin/appointments', [AppointmentController::class, 'index']);
-
     // Route::get('/pharmacy/prescriptions', [PharmacyController::class, 'index']);
     // Route::post('/pharmacy/prescriptions/{id}/ready', [PharmacyController::class, 'markReady']);
     // Route::post('/pharmacy/prescriptions/{id}/dispense', [PharmacyController::class, 'dispense']);
@@ -69,6 +60,19 @@ Route::middleware('auth:sanctum')->group(function () {
     // Route::post('/pharmacy/inventory/{id}/adjust', [PharmacyController::class, 'adjustQuantity']);
 
 });
+
+// كانت هاي بدون أي فحص دور - أي مريض أو طبيب مسجل دخول يقدر يجيب بيانات
+// كل المرضى وكل المواعيد بالنظام. ضفنا checkRole:admin زي باقي مسارات الأدمن.
+Route::middleware(['auth:sanctum', 'checkRole:admin'])->group(function () {
+    Route::get('/admin/posts', [PostController::class, 'index']);
+    Route::post('/admin/posts', [PostController::class, 'store']);
+    Route::delete('/admin/posts/{id}', [PostController::class, 'destroy']);
+    Route::patch('/admin/posts/{id}/approve', [PostController::class, 'approve']);
+
+    Route::get('/admin/patients', [PatientController::class, 'getAllPatients']);
+
+    Route::get('/admin/appointments', [AppointmentController::class, 'index']);
+});
 Route::post('/reception/patients', [ReceptionController::class, 'registerPatient']);
 
 // كانت هاي المسارات مفتوحة من غير تسجيل دخول إطلاقاً - أي حد بيقدر يشوف/يعدل
@@ -81,11 +85,13 @@ Route::middleware(['auth:sanctum', 'checkRole:laboratory'])->prefix('laboratory'
 });
 
 // نفس الشي هون - كانت مفتوحة لأي حد يعدل كميات وأسعار المخزون بدون تسجيل دخول.
-// القراءة بس (عرض الأصناف) مسموحة لمدير المخزون والصيدلية سوا، لأنه شاشة
-// "توفر المخزون" بالصيدلية بتعتمد على GET items. التعديل/الحذف مقصور على مدير المخزون فقط.
-Route::middleware(['auth:sanctum', 'checkRole:inventory_manager,pharmacy'])->prefix('inventory')->group(function () {
+// القراءة بس (عرض الأصناف والعمليات) مسموحة لمدير المخزون والصيدلية والأدمن سوا،
+// لأنه شاشة "توفر المخزون" بالصيدلية وشاشة "مراقبة المخزون" بالأدمن كلاهما
+// بتعتمد على GET items/operations. التعديل/الحذف مقصور على مدير المخزون فقط.
+Route::middleware(['auth:sanctum', 'checkRole:inventory_manager,pharmacy,admin'])->prefix('inventory')->group(function () {
     Route::get('items', [InventoryController::class, 'index']);
     Route::get('items/{inventory}', [InventoryController::class, 'show']);
+    Route::get('operations', [InventoryOperationController::class, 'index']);
 });
 
 Route::middleware(['auth:sanctum', 'checkRole:inventory_manager'])->prefix('inventory')->group(function () {
@@ -93,8 +99,6 @@ Route::middleware(['auth:sanctum', 'checkRole:inventory_manager'])->prefix('inve
     Route::put('items/{inventory}', [InventoryController::class, 'update']);
     Route::delete('items/{inventory}', [InventoryController::class, 'destroy']);
     Route::post('items/{inventory}/adjust', [InventoryController::class, 'adjust']);
-
-    Route::get('operations', [InventoryOperationController::class, 'index']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {

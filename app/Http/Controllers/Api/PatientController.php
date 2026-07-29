@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\Broadcast;
 use App\Models\DoctorRating;
+use App\Models\Patient;
 use App\Models\PatientProfile;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -33,6 +34,21 @@ class PatientController extends Controller
         return response()->json([
             'status' => true,
             'message' => 'تم جلب قائمة المرضى بنجاح',
+            'data' => $patients,
+        ], 200);
+    }
+
+    // مرضى مسجّلين من شاشة الاستقبال (جدول patients المنفصل عن users) -
+    // ما إلهم حساب دخول، فبيضلوا مفصولين عن قائمة "مرضى بحساب" فوق
+    public function getReceptionPatients()
+    {
+        $patients = Patient::select('id', 'full_name', 'phone', 'national_id', 'birth_date', 'insurance_status', 'guardian_id', 'created_at')
+            ->latest()
+            ->get();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'تم جلب قائمة مرضى الاستقبال بنجاح',
             'data' => $patients,
         ], 200);
     }
