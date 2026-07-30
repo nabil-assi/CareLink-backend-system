@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\ImagingOrder;
+use App\Models\Notification;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
@@ -65,6 +67,20 @@ class RadiologyController extends Controller
             'completed_by' => $request->completed_by ?? 'فني أشعة',
             'completed_at' => now(),
         ]);
+
+        // بس المريض يلي عنده حساب حقيقي (User) بقدر يشوف إشعارات - نفس منطق
+        // المختبر تماماً (مريض الاستقبال ما إله حساب دخول فما في محل نعمله إشعار)
+        $patient = $order->resolvePatient();
+        if ($patient instanceof User) {
+            Notification::create([
+                'type' => 'imaging_ready',
+                'title' => 'تقرير الأشعة جاهز',
+                'body' => 'تقرير أشعتك (' . $order->studies . ') أصبح جاهزاً',
+                'appointment_id' => $order->appointment_id,
+                'notifiable_id' => $patient->id,
+                'notifiable_type' => User::class,
+            ]);
+        }
 
         return response()->json(['message' => 'تم إرسال تقرير الأشعة بنجاح', 'data' => $order]);
     }
