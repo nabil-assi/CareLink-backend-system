@@ -9,11 +9,16 @@ class Notification extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['type', 'title', 'body', 'is_read', 'notifiable_id', 'notifiable_type'];
+    protected $fillable = ['type', 'title', 'body', 'appointment_id', 'is_read', 'notifiable_id', 'notifiable_type'];
 
     public function notifiable()
     {
         return $this->morphTo();
+    }
+
+    public function appointment()
+    {
+        return $this->belongsTo(Appointment::class);
     }
 
     // كل إشعارات مستخدم معين (باستخدام User دايماً حسب النظام الموحد عندك)
