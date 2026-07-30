@@ -134,16 +134,23 @@ class PatientController extends Controller
 
 public function myMedicalRecords(Request $request)
     {
-        $patientId = $request->user()->id;
+        $user = $request->user();
 
-        // جلب المواعيد
-        $records = Appointment::where('patient_id', $patientId)
+        // لازم نفلتر على patient_type = User كمان، لأنه appointments فيها مرضى
+        // من جدول Patient (تسجيل الاستقبال) بنفس الـ id بالصدفة - بدون هاد
+        // الفلتر كانت ممكن ترجع مواعيد مريض تاني إذا تطابق الـ id رقمياً بس
+        $records = Appointment::where('patient_id', $user->id)
+            ->where('patient_type', User::class)
             ->with('doctor:id,name')
             ->latest()
             ->get();
 
-        // جلب تحاليل المريض مباشرة
-        $labs = LabOrder::where('patient_id', $patientId)
+        // lab_orders ما فيها عمود patient_id (تم استبداله بـ appointment_id)
+        // بعد إعادة هيكلة الجدول - كانت هاي بتكسر الـ API بخطأ SQL 500 وبتظهر
+        // فاضية بالفرونت لأنه كان في catch صامت
+        $labs = LabOrder::whereHas('appointment', function ($query) use ($user) {
+                $query->where('patient_id', $user->id)->where('patient_type', User::class);
+            })
             ->with('doctor:id,name')
             ->latest()
             ->get();

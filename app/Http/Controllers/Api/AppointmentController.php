@@ -364,9 +364,11 @@ public function doctorPatients()
 
         $patient = $appointment->patient;
 
-        // جلب كل مواعيد هذا المريض المحدد مع هذا الطبيب
+        // جلب كل مواعيد هذا المريض المحدد مع هذا الطبيب - لازم patient_type
+        // كمان، وإلا ممكن تنجر مواعيد مريض تاني (User أو Patient) تصادف نفس الـ id
         $patientAppointments = Appointment::where('doctor_id', $doctorId)
             ->where('patient_id', $patient->id)
+            ->where('patient_type', get_class($patient))
             ->orderBy('scheduled_at', 'desc')
             ->get();
 
@@ -509,8 +511,11 @@ public function doctorPatients()
 
     public function showPatientAppointment($id, Request $request)
     {
+        // patient_type لازم كمان كفحص ملكية - وإلا مريض ممكن يشوف تفاصيل موعد
+        // مريض استقبال (Patient) لو صدفة نفس الرقم متطابق مع الـ id تبعه
         $appointment = Appointment::where('id', $id)
             ->where('patient_id', $request->user()->id)
+            ->where('patient_type', User::class)
             ->with([
                 'doctor',
                 'doctor.doctorProfile',
