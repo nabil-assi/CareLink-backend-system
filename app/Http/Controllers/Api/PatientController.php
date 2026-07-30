@@ -10,7 +10,9 @@ use App\Models\Patient;
 use App\Models\PatientProfile;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use App\Models\LabOrder;
 
 class PatientController extends Controller
@@ -118,6 +120,30 @@ class PatientController extends Controller
             'message' => 'تم تحديث بيانات الحساب بنجاح',
             'user' => $user,
         ]);
+    }
+
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'new_password' => 'required|min:6',
+        ]);
+
+        $user = $request->user();
+
+        if (! Hash::check($request->current_password, $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => ['كلمة المرور الحالية غير صحيحة.'],
+            ]);
+        }
+
+        $user->update([
+            'password' => Hash::make($request->new_password),
+        ]);
+
+        return response()->json([
+            'message' => 'تم تحديث كلمة المرور بنجاح',
+        ], 200);
     }
 
     public function getMedicalProfile(Request $request)

@@ -22,6 +22,7 @@ Route::middleware(['auth:sanctum', 'checkRole:admin'])->prefix('admin')->group(f
         Route::put('/activate-doctor/{id}', [AdminController::class, 'activateDoctor']);
 
     Route::delete('/reject-doctor/{id}', [AdminController::class, 'rejectDoctor']);
+    Route::post('/doctors/{id}/email', [AdminController::class, 'sendEmailToDoctor']);
 
     // Route::apiResource('ads', AdController::class);
     // Route::apiResource('posts', PostController::class)->only(['index', 'store', 'destroy']);

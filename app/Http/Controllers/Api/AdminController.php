@@ -9,6 +9,7 @@ use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 
 class AdminController extends Controller
@@ -147,6 +148,25 @@ class AdminController extends Controller
 
         return response()->json([
             'message' => 'تم تفعيل حساب الطبيب '.$doctor->name.' بنجاح',
+        ], 200);
+    }
+
+    public function sendEmailToDoctor(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'subject' => 'nullable|string|max:255',
+            'message' => 'required|string',
+        ]);
+
+        $doctor = User::where('role', 'doctor')->findOrFail($id);
+
+        Mail::raw($validated['message'], function ($mail) use ($doctor, $validated) {
+            $mail->to($doctor->email)
+                ->subject($validated['subject'] ?: 'CareLink — إشعار من الإدارة');
+        });
+
+        return response()->json([
+            'message' => 'تم إرسال البريد إلى '.$doctor->email.' بنجاح',
         ], 200);
     }
 
