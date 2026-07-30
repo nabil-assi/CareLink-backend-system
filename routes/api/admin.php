@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\Admin\StaffController;
 use App\Http\Controllers\Api\Admin\SettingController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\DoctorController;
+use App\Http\Controllers\Api\PatientController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum', 'checkRole:admin'])->prefix('admin')->group(function () {
@@ -50,6 +51,8 @@ Route::middleware(['auth:sanctum', 'checkRole:admin'])->prefix('admin')->group(f
     Route::get('/', [AdminController::class, 'show']);
     Route::put('/profile', [AdminController::class, 'updateProfile']);
     Route::put('/password', [AdminController::class, 'updatePassword']);
+
+    Route::get('/reception-patients', [PatientController::class, 'getReceptionPatients']);
 
     Route::get('/staff', [StaffController::class, 'index']);
     Route::post('/staff', [StaffController::class, 'store']);
