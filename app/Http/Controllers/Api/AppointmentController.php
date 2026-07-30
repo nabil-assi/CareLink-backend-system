@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\ImagingOrder;
 use App\Models\LabOrder;
+use App\Models\Prescription;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -282,6 +283,19 @@ class AppointmentController extends Controller
             'medications' => $validated['medications'],
             'status' => 'awaiting_pharmacy',
         ]);
+
+        // كان الكود بس بيحفظ النص جوا الموعد وما بيوصل عالإطلاق لجدول
+        // prescriptions يلي شاشة الصيدلية فعلياً بتقرأ منه - الصيدلية ما
+        // كانت تشوف ولا وصفة أبداً. updateOrCreate عشان لو الطبيب عدّل
+        // الوصفة لنفس الموعد ما يصير عنده سجل مكرر بقائمة الصيدلية
+        Prescription::updateOrCreate(
+            ['appointment_id' => $appointment->id],
+            [
+                'diagnosis' => $appointment->diagnosis,
+                'notes' => $validated['medications'],
+                'status' => 'pending',
+            ]
+        );
 
         return response()->json([
             'message' => 'تم إرسال الوصفة الطبية بنجاح',

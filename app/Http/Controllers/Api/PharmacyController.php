@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Inventory;
+use App\Models\Notification;
 use App\Models\Prescription;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class PharmacyController extends Controller
@@ -90,8 +92,22 @@ class PharmacyController extends Controller
 
     public function markReady($id)
     {
-        $rx = Prescription::findOrFail($id);
+        $rx = Prescription::with('appointment.patient')->findOrFail($id);
         $rx->update(['status' => 'ready']); // سيحفظ الحالة بنجاح في قاعدة البيانات
+
+        // كانت الشاشة بتقول "تم إشعار المريض" بس ما في أي إشعار حقيقي بينبعت -
+        // بس المريض يلي عنده حساب حقيقي (User) بقدر يشوف إشعارات
+        $patient = $rx->appointment?->patient;
+        if ($patient instanceof User) {
+            Notification::create([
+                'type' => 'prescription_ready',
+                'title' => 'دواؤك جاهز للاستلام',
+                'body' => 'وصفتك الطبية أصبحت جاهزة، تفضّل لاستلامها من الصيدلية',
+                'appointment_id' => $rx->appointment_id,
+                'notifiable_id' => $patient->id,
+                'notifiable_type' => User::class,
+            ]);
+        }
 
         return response()->json(['message' => 'تم تحديث حالة الوصفة إلى جاهز', 'data' => $rx], 200);
     }
