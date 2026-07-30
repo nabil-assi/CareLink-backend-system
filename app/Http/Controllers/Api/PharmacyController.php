@@ -61,7 +61,17 @@ class PharmacyController extends Controller
 
     public function index()
     {
-        $prescriptions = Prescription::with(['appointment.patient', 'appointment.doctor', 'medicines'])
+        // patient() موديل متعدد الأشكال (morphTo) - ممكن يكون User أو Patient
+        // (مريض استقبال بدون حساب)، والعلاقة patientProfile موجودة بس على User،
+        // فلازم morphWith بدل with() العادية وإلا بينكسر على مرضى الاستقبال
+        $prescriptions = Prescription::with([
+            'appointment.doctor',
+            'appointment.patient' => function ($morphTo) {
+                $morphTo->morphWith([User::class => ['patientProfile']]);
+            },
+            'medicines',
+            'dispensedBy',
+        ])
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($rx) {
@@ -72,6 +82,12 @@ class PharmacyController extends Controller
                     return "{$med->medicine_name} - الجرعة: {$med->dosage} - المدة: {$med->duration}";
                 })->implode("\n");
 
+                // مرضى الاستقبال (walk-in) مسجّلين بجدول Patient المنفصل وما إلهم
+                // ملف طبي/حساسية أصلاً - الحساسية موجودة بس للمرضى يلي سجّلوا حسابهم بأنفسهم
+                $allergies = $patient instanceof User
+                    ? optional($patient->patientProfile)->allergies
+                    : null;
+
                 return [
                     'id' => $rx->id,
                     'patientId' => $patient->id ?? null,
@@ -80,10 +96,16 @@ class PharmacyController extends Controller
                     'doctor' => $doctor->name ?? 'طبيب',
                     'phone' => $patient->phone ?? '',
                     'nationalId' => $patient->national_id ?? '',
+                    'allergies' => $allergies,
                     'medications' => $medicationsList ?: $rx->notes,
                     'status' => $rx->status ?? 'pending', // سيقرأ الحالة الحقيقية من قاعدة البيانات
                     'createdAt' => $rx->created_at,
                     'dispensedAt' => $rx->dispensed_at,
+                    'pharmacistName' => $rx->dispensedBy->name ?? null,
+                    'dispenseNotes' => $rx->dispense_notes,
+                    'verifyMethod' => $rx->verify_method,
+                    'allergyWarning' => $rx->allergy_warning,
+                    'allergyOverridden' => (bool) $rx->allergy_overridden,
                 ];
             });
 
@@ -114,10 +136,23 @@ class PharmacyController extends Controller
 
     public function dispense(Request $request, $id)
     {
+        $validated = $request->validate([
+            'id_last_4' => 'nullable|string|max:4',
+            'notes' => 'nullable|string|max:500',
+            'verify_method' => 'nullable|in:national_id,phone',
+            'allergy_warning' => 'nullable|string|max:255',
+            'allergy_overridden' => 'nullable|boolean',
+        ]);
+
         $rx = Prescription::findOrFail($id);
         $rx->update([
             'status' => 'dispensed',
-            'dispensed_at' => now(), 
+            'dispensed_at' => now(),
+            'dispensed_by' => $request->user()->id,
+            'dispense_notes' => $validated['notes'] ?? null,
+            'verify_method' => $validated['verify_method'] ?? null,
+            'allergy_warning' => $validated['allergy_warning'] ?? null,
+            'allergy_overridden' => $validated['allergy_overridden'] ?? false,
         ]);
 
         return response()->json(['message' => 'تم صرف الدواء بنجاح', 'data' => $rx], 200);
