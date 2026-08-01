@@ -40,6 +40,7 @@ Route::middleware(['auth:sanctum', 'checkRole:admin'])->prefix('admin')->group(f
 
     Route::post('/broadcast', [AdminController::class, 'sendBroadcast']);
     Route::get('/broadcasts', [AdminController::class, 'getAllBroadcasts']);
+    Route::delete('/broadcasts/{id}', [AdminController::class, 'deleteBroadcast']);
 
     Route::get('/articles', [ArticleController::class, 'index']);
     Route::post('/articles', [ArticleController::class, 'store']);

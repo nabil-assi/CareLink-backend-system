@@ -23,13 +23,20 @@ $posts = Post::with('user')->latest()->get();
         $request->validate([
             'title' => 'required',
             'content' => 'required',
+            'image' => 'nullable|image|max:2048',
         ]);
+
+        // كانت بتقرا $request->image_path (حقل الفرونت ما بيبعته إطلاقاً - بيبعت
+        // ملف باسم image)، فصورة المنشور الجديد كانت دايماً بتنحفظ فاضية
+        $imagePath = $request->hasFile('image')
+            ? $request->file('image')->store('posts', 'public')
+            : null;
 
         // نستخدم auth()->id() لجلب الـ user_id للمستخدم الذي سجل الدخول
         $post = Post::create([
             'title' => $request->title,
             'content' => $request->content,
-            'image_path' => $request->image_path,
+            'image_path' => $imagePath,
             'user_id' => auth()->id(),
             'is_approved' => false, // نضمن أنها دائماً false عند الإضافة الجديدة
         ]);
@@ -45,9 +52,12 @@ $posts = Post::with('user')->latest()->get();
             'content' => 'required',
             'image' => 'nullable|image|max:2048',
         ]);
+        unset($data['image']);
 
+        // كان بيحط الملف بمفتاح 'image' واللي مش موجود بـ $fillable (العمود
+        // الحقيقي اسمه image_path)، فالـ mass assignment كان بيرفضه بصمت
         if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('posts', 'public');
+            $data['image_path'] = $request->file('image')->store('posts', 'public');
         }
 
         $post->update($data);

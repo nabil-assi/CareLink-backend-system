@@ -136,8 +136,17 @@ class AppointmentController extends Controller
         // 1. البحث عن الموعد
         $appointment = Appointment::findOrFail($id);
 
-        // 2. اختيارياً: التحقق من أن المستخدم لديه صلاحية للإلغاء
-        // (مثلاً الطبيب أو موظف الاستقبال فقط)
+        // 2. التحقق من أن المستخدم صاحب الموعد فعلاً (نفس منطق reschedule تحت) —
+        // قبل هيك أي مستخدم مسجل دخول فيه يلغي أي موعد بالنظام بس يخمن الـ id بالرابط
+        $user = $request->user();
+        $isOwnerPatient = $appointment->patient_type === User::class && $appointment->patient_id == $user->id;
+        $isAssignedDoctor = $appointment->doctor_id == $user->id;
+
+        if (!$isOwnerPatient && !$isAssignedDoctor) {
+            return response()->json([
+                'message' => 'غير مصرح لك بإلغاء هذا الموعد',
+            ], 403);
+        }
 
         // 3. تحديث الحالة
         $appointment->update([
