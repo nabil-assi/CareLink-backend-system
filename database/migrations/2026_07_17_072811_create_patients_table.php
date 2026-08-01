@@ -8,6 +8,12 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // الجدول ممكن يكون انعمل مسبقاً بمحاولة ديبلوي سابقة فشلت بعد إنشائه
+        // وقبل ما يتسجل بجدول migrations - هيك منتجنب "table already exists"
+        if (Schema::hasTable('patients')) {
+            return;
+        }
+
         Schema::create('patients', function (Blueprint $table) {
             $table->id();
             $table->string('full_name');
