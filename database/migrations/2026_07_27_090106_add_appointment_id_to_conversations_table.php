@@ -8,13 +8,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('conversations', function (Blueprint $table) {
-            $table->foreignId('appointment_id')
-                ->after('id')
-                ->unique()
-                ->constrained('appointments')
-                ->onDelete('cascade');
-        });
+        if (!Schema::hasColumn('conversations', 'appointment_id')) {
+            Schema::table('conversations', function (Blueprint $table) {
+                $table->foreignId('appointment_id')
+                    ->after('id')
+                    ->unique()
+                    ->constrained('appointments')
+                    ->onDelete('cascade');
+            });
+        }
     }
 
     public function down(): void

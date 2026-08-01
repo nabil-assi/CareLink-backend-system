@@ -6,18 +6,18 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up(): void
-    {
-        Schema::table('messages', function (Blueprint $table) {
+   public function up(): void
+{
+    Schema::table('messages', function (Blueprint $table) {
+        if (!Schema::hasColumn('messages', 'attachment_path')) {
             $table->string('attachment_path')->nullable()->after('body');
+        }
+        if (!Schema::hasColumn('messages', 'attachment_type')) {
             $table->enum('attachment_type', ['image', 'video'])->nullable()->after('attachment_path');
-        });
-
-        // body صار اختياري لأنه ممكن الرسالة تكون مرفق بس بدون نص
-        Schema::table('messages', function (Blueprint $table) {
-            $table->text('body')->nullable()->change();
-        });
-    }
+        }
+        $table->text('body')->nullable()->change();
+    });
+}
 
     public function down(): void
     {

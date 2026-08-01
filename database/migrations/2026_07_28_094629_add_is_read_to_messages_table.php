@@ -6,12 +6,14 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up(): void
-    {
+   public function up(): void
+{
+    if (!Schema::hasColumn('messages', 'is_read')) {
         Schema::table('messages', function (Blueprint $table) {
             $table->boolean('is_read')->default(false)->after('attachment_type');
         });
     }
+}
 
     public function down(): void
     {
