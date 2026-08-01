@@ -6,8 +6,9 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up(): void
-    {
+   public function up(): void
+{
+    if (!Schema::hasColumn('messages', 'sender_id')) {
         Schema::table('messages', function (Blueprint $table) {
             $table->foreignId('sender_id')
                 ->after('conversation_id')
@@ -15,6 +16,7 @@ return new class extends Migration
                 ->onDelete('cascade');
         });
     }
+}
 
     public function down(): void
     {

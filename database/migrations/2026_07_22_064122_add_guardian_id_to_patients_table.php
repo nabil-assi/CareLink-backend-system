@@ -6,22 +6,28 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
-   public function up()
-{
-    Schema::table('patients', function (Blueprint $table) {
-        $table->unsignedBigInteger('guardian_id')->nullable()->after('id');
-        $table->foreign('guardian_id')->references('id')->on('patients')->onDelete('set null');
-    });
-}
+    public function up(): void
+    {
+        Schema::table('patients', function (Blueprint $table) {
+            if (!Schema::hasColumn('patients', 'guardian_id')) {
+                $table->unsignedBigInteger('guardian_id')->nullable()->after('id');
+            }
+        });
 
-public function down()
-{
-    Schema::table('patients', function (Blueprint $table) {
-        $table->dropForeign(['guardian_id']);
-        $table->dropColumn('guardian_id');
-    });
-}
+        try {
+            Schema::table('patients', function (Blueprint $table) {
+                $table->foreign('guardian_id')->references('id')->on('patients')->onDelete('set null');
+            });
+        } catch (\Illuminate\Database\QueryException $e) {
+            // الـ constraint أصلاً موجود من محاولة سابقة - تجاهل وكمل
+        }
+    }
+
+    public function down(): void
+    {
+        Schema::table('patients', function (Blueprint $table) {
+            $table->dropForeign(['guardian_id']);
+            $table->dropColumn('guardian_id');
+        });
+    }
 };

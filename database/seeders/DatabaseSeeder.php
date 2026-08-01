@@ -2,45 +2,83 @@
 
 namespace Database\Seeders;
 
-use App\Models\Appointment;
 use App\Models\User;
+use App\Models\DoctorProfile;
+use App\Models\ReceptionistProfile;
+use App\Models\LabProfile;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. إنشاء الأدمن
-        User::factory()->admin()->create();
+        // الأدمن وحده active من البداية عشان يقدر يفوت ويفعّل الباقي
+        $admin = User::firstOrCreate(
+            ['email' => 'admin@gmail.com'],
+            [
+                'name' => 'Admin',
+                'password' => Hash::make('12345678'),
+                'national_id' => '100000001',
+                'role' => 'admin',
+                'status' => true,
+            ]
+        );
 
-        $doctors = User::factory()->doctor()->count(5)->create();
-        $patients = User::factory()->count(10)->create();
-        // 2. إنشاء الأطباء والمرضى
-        $doctors->each(fn ($d) => $d->doctorProfile()->create([
-            'status' => 'active',
-            'specialty' => 'Cardiology',
-            'clinic_address' => 'Gaza, Main Street',
-            'date_of_birth' => '1990-01-01', // أضف هذا الحقل المفقود
-            'gender' => 'male',   
-            // وأضف هذا الحقل أيضاً
-        ]));
+        $doctor = User::firstOrCreate(
+            ['email' => 'doctor@gmail.com'],
+            [
+                'name' => 'Dr. Demo',
+                'password' => Hash::make('12345678'),
+                'national_id' => '100000002',
+                'role' => 'doctor',
+                'status' => false,
+            ]
+        );
 
-        $patients->each(fn ($p) => $p->patientProfile()->create([
-            'blood_type' => 'O+',
-            // أضف أي حقول أخرى إجبارية في جدول patient_profiles هنا
-        ]));
-        // 3. إنشاء البروفايلات المرتبطة
-        $doctors->each(fn ($d) => $d->doctorProfile()->create(['status' => 'active', 'specialty' => 'Cardiology']));
-        $patients->each(fn ($p) => $p->patientProfile()->create(['blood_type' => 'O+']));
+        DoctorProfile::firstOrCreate(
+            ['user_id' => $doctor->id],
+            [
+                'specialty' => 'باطنية',
+                'years_of_experience' => 5,
+                'status' => 'inactive',
+                'gender' => 'male',
+            ]
+        );
 
-        // 4. المواعيد والسجلات (استخدم user_id الآن)
-        foreach ($patients as $patient) {
-            $appointment = Appointment::create([
-                'doctor_id' => $doctors->random()->id,
-                'patient_id' => $patient->id,
-                'scheduled_at' => now()->addDays(rand(1, 10)),
-                'status' => 'pending',
-            ]);
-        }
+        User::firstOrCreate(
+            ['email' => 'patient@gmail.com'],
+            [
+                'name' => 'Patient Demo',
+                'password' => Hash::make('12345678'),
+                'national_id' => '100000003',
+                'role' => 'patient',
+                'status' => false,
+            ]
+        );
+
+        $reception = User::firstOrCreate(
+            ['email' => 'reception@gmail.com'],
+            [
+                'name' => 'Reception Demo',
+                'password' => Hash::make('12345678'),
+                'national_id' => '100000004',
+                'role' => 'reception',
+                'status' => false,
+            ]
+        );
+        ReceptionistProfile::firstOrCreate(['user_id' => $reception->id]);
+
+        $lab = User::firstOrCreate(
+            ['email' => 'lab@gmail.com'],
+            [
+                'name' => 'Lab Demo',
+                'password' => Hash::make('12345678'),
+                'national_id' => '100000005',
+                'role' => 'lab',
+                'status' => false,
+            ]
+        );
+        LabProfile::firstOrCreate(['user_id' => $lab->id]);
     }
 }

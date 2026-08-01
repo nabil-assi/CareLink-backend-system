@@ -10,17 +10,17 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void
-    {
-        // patient_id كان مربوط بـ foreign key صارم على جدول users بس - يعني
-        // مستحيل تقنياً يشتغل لمريض مسجّل من الاستقبال (جدول patients منفصل).
-        // بنستبدلها بـ appointment_id ونجيب المريض عن طريق الموعد (نفس أسلوب
-        // imaging_orders): appointment->patient بيحل النوعين تلقائياً.
-        Schema::table('lab_orders', function (Blueprint $table) {
+{
+    Schema::table('lab_orders', function (Blueprint $table) {
+        if (Schema::hasColumn('lab_orders', 'patient_id')) {
             $table->dropForeign(['patient_id']);
             $table->dropColumn('patient_id');
+        }
+        if (!Schema::hasColumn('lab_orders', 'appointment_id')) {
             $table->foreignId('appointment_id')->nullable()->after('id')->constrained('appointments')->cascadeOnDelete();
-        });
-    }
+        }
+    });
+}
 
     /**
      * Reverse the migrations.

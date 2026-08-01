@@ -10,11 +10,13 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void
-    {
+{
+    if (!Schema::hasColumn('users', 'profile_picture')) {
         Schema::table('users', function (Blueprint $table) {
             $table->string('profile_picture')->nullable()->after('address');
         });
     }
+}
 
     /**
      * Reverse the migrations.
