@@ -168,7 +168,8 @@ class DoctorController extends Controller
 
    public function homeStats()
 {
-    $doctorId = auth()->id();
+    $doctor = auth()->user();
+    $doctorId = $doctor->id;
 
     // جلب المواعيد مع بيانات المريض الأساسية الموجودة في الجدول فعلياً
     $appointments = Appointment::where('doctor_id', $doctorId)
@@ -184,6 +185,8 @@ class DoctorController extends Controller
             'status' => $app->status,
             'type' => $app->type,
             'scheduled_at' => $app->scheduled_at,
+            'patient_id' => $app->patient_id,
+            'patient_type' => $app->patient_type,
             'patient_name' => $patient->full_name ?? $patient->name ?? 'مريض',
             'patient_phone' => $patient->phone ?? '—',
             'patient_avatar' => $patient->image ?? null, // أو اجعلها null مباشرة إذا لم يكن هناك عمود صورة
@@ -224,6 +227,7 @@ class DoctorController extends Controller
     return response()->json([
         'message' => 'تم استرجاع بيانات الصفحة الرئيسية بنجاح',
         'data' => $formattedAppointments,
+        'specialty' => $doctor->doctorProfile->specialty ?? null,
         'readyResults' => [
             'labs' => $labs,
             'imaging' => $imaging,

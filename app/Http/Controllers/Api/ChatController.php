@@ -178,6 +178,7 @@ public function unreadCounts(Request $request)
         'type' => 'chat_message',
         'title' => 'رسالة جديدة من ' . $request->user()->name,
         'body' => $validated['body'] ?? '📎 مرفق',
+        'appointment_id' => $conversation->appointment_id,
         'notifiable_id' => $recipientId,
         'notifiable_type' => User::class,
     ]);

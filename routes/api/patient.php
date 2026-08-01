@@ -8,6 +8,7 @@ Route::middleware(['auth:sanctum', 'checkRole:patient'])->prefix('patient')->gro
     Route::get('/profile', [PatientController::class, 'profile']);
     Route::patch('/profile', [PatientController::class, 'updateProfile']);
     Route::patch('/account', [PatientController::class, 'updateAccount']);
+    Route::post('/profile/change-password', [PatientController::class, 'changePassword']);
     Route::get('/medical-profile', [PatientController::class, 'getMedicalProfile']);
 
     Route::post('/appointments', [AppointmentController::class, 'store']);

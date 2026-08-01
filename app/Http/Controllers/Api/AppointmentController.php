@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\ImagingOrder;
 use App\Models\LabOrder;
+use App\Models\Prescription;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -283,6 +284,19 @@ class AppointmentController extends Controller
             'status' => 'awaiting_pharmacy',
         ]);
 
+        // كان الكود بس بيحفظ النص جوا الموعد وما بيوصل عالإطلاق لجدول
+        // prescriptions يلي شاشة الصيدلية فعلياً بتقرأ منه - الصيدلية ما
+        // كانت تشوف ولا وصفة أبداً. updateOrCreate عشان لو الطبيب عدّل
+        // الوصفة لنفس الموعد ما يصير عنده سجل مكرر بقائمة الصيدلية
+        Prescription::updateOrCreate(
+            ['appointment_id' => $appointment->id],
+            [
+                'diagnosis' => $appointment->diagnosis,
+                'notes' => $validated['medications'],
+                'status' => 'pending',
+            ]
+        );
+
         return response()->json([
             'message' => 'تم إرسال الوصفة الطبية بنجاح',
             'data' => $appointment,
@@ -308,8 +322,12 @@ public function doctorPatients()
     {
         $doctorId = auth()->id();
 
+        // patient() علاقة polymorphic بترجع User أو Patient حسب الموعد، وPatient
+        // (مريض الاستقبال) ما إله علاقة patientProfile أصلاً - عمل eager load
+        // لـ 'patient.patientProfile' كان بيكسر الصفحة (500) لأي طبيب عنده موعد
+        // واحد بس لمريض استقبال، لهيك بنجيبها بس لما يكون المريض User فعلاً
         $patients = Appointment::where('doctor_id', $doctorId)
-            ->with(['patient', 'patient.patientProfile']) // جلب بروفايل المريض إن وجد
+            ->with('patient')
             ->get()
             ->pluck('patient')
             ->filter()
@@ -318,9 +336,9 @@ public function doctorPatients()
             ->map(function ($patient) {
                 // محاولة جلب فصيلة الدم سواء كان المريض User أو Patient
                 $bloodType = null;
-                
-                if (method_exists($patient, 'patientProfile') && $patient->patientProfile) {
-                    $bloodType = $patient->patientProfile->blood_type;
+
+                if ($patient instanceof \App\Models\User) {
+                    $bloodType = $patient->patientProfile?->blood_type;
                 } elseif (isset($patient->blood_type)) {
                     $bloodType = $patient->blood_type;
                 }
@@ -345,9 +363,11 @@ public function doctorPatients()
     {
         $doctorId = auth()->id();
 
-        // جلب جميع مواعيد هذا الطبيب مع مرضاهم
+        // جلب جميع مواعيد هذا الطبيب مع مرضاهم - بدون nested eager load لـ
+        // patientProfile لأنه Patient (مريض الاستقبال) ما إله هاي العلاقة
+        // أصلاً وكانت بتكسر الصفحة (500) لأي طبيب عنده موعد لمريض استقبال
         $appointments = Appointment::where('doctor_id', $doctorId)
-            ->with(['patient', 'patient.patientProfile'])
+            ->with('patient')
             ->get();
 
         // البحث عن الموعد الذي يطابق المريض المطلوبة (سواء كان ID المريض أو ID الـ User المرتبط)
@@ -364,9 +384,11 @@ public function doctorPatients()
 
         $patient = $appointment->patient;
 
-        // جلب كل مواعيد هذا المريض المحدد مع هذا الطبيب
+        // جلب كل مواعيد هذا المريض المحدد مع هذا الطبيب - لازم patient_type
+        // كمان، وإلا ممكن تنجر مواعيد مريض تاني (User أو Patient) تصادف نفس الـ id
         $patientAppointments = Appointment::where('doctor_id', $doctorId)
             ->where('patient_id', $patient->id)
+            ->where('patient_type', get_class($patient))
             ->orderBy('scheduled_at', 'desc')
             ->get();
 
@@ -509,8 +531,11 @@ public function doctorPatients()
 
     public function showPatientAppointment($id, Request $request)
     {
+        // patient_type لازم كمان كفحص ملكية - وإلا مريض ممكن يشوف تفاصيل موعد
+        // مريض استقبال (Patient) لو صدفة نفس الرقم متطابق مع الـ id تبعه
         $appointment = Appointment::where('id', $id)
             ->where('patient_id', $request->user()->id)
+            ->where('patient_type', User::class)
             ->with([
                 'doctor',
                 'doctor.doctorProfile',

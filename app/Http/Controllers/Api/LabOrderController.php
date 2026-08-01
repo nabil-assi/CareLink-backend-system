@@ -72,6 +72,7 @@ class LabOrderController extends Controller
                 'type' => 'lab_ready',
                 'title' => 'نتيجة تحليل جاهزة',
                 'body' => 'نتيجة تحليلك (' . $order->tests . ') أصبحت جاهزة',
+                'appointment_id' => $order->appointment_id,
                 'notifiable_id' => $patient->id,
                 'notifiable_type' => User::class,
             ]);
