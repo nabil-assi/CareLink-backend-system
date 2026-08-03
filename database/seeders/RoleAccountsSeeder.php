@@ -9,7 +9,7 @@ use App\Models\LabProfile;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
-class DatabaseSeeder extends Seeder
+class RoleAccountsSeeder extends Seeder
 {
     public function run(): void
     {
