@@ -184,6 +184,13 @@ class AdminController extends Controller
         return response()->json(Broadcast::latest()->get());
     }
 
+    public function deleteBroadcast($id)
+    {
+        Broadcast::findOrFail($id)->delete();
+
+        return response()->json(['message' => 'تم حذف الإعلان بنجاح'], 200);
+    }
+
     public function show(Request $request)
     {
         return response()->json($request->user());

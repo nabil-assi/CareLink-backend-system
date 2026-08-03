@@ -3,9 +3,11 @@
 use App\Http\Controllers\Api\Admin\AdController;
 use App\Http\Controllers\Api\Admin\NotificationController;
 use App\Http\Controllers\Api\Admin\PostController;
+use App\Http\Controllers\Api\Admin\SettingController;
 use App\Http\Controllers\Api\AdminAuthController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AppointmentController;
+use App\Http\Controllers\Api\BroadcastController;
 use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\DoctorAuthController;
@@ -45,6 +47,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/conversations/{conversationId}/messages', [ChatController::class, 'getMessages']);
     Route::post('/conversations/{conversationId}/messages', [ChatController::class, 'sendMessage']);
 
+    // مسار عام يشتغل لأي دور مسجل دخول - الفرونت أصلاً بيجرب مسار البث الخاص
+    // بدوره الأول (/pharmacy/broadcasts...الخ) وبعدين بيرجع لهاد كـ fallback،
+    // بس الصيدلية/المختبر/الأشعة/الاستقبال/مدير المخزون ما كان عندهم أي مسار بث إطلاقاً
+    Route::get('/broadcasts', [BroadcastController::class, 'mine']);
+
     // Route::get('/conversations/{conversationId}/messages', [ChatController::class, 'getMessages']);
     // Route::post('/conversations/{conversationId}/messages', [ChatController::class, 'sendMessage']);
 
@@ -67,6 +74,7 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware(['auth:sanctum', 'checkRole:admin'])->group(function () {
     Route::get('/admin/posts', [PostController::class, 'index']);
     Route::post('/admin/posts', [PostController::class, 'store']);
+    Route::put('/admin/posts/{id}', [PostController::class, 'update']);
     Route::delete('/admin/posts/{id}', [PostController::class, 'destroy']);
     Route::patch('/admin/posts/{id}/approve', [PostController::class, 'approve']);
 
