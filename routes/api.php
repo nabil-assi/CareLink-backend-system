@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\PharmacyController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\Reception\ReceptionController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Artisan;
 
 Route::get('/articles', [LandingController::class, 'getPublishedArticles']);
 Route::get('/articles/{slug}', [LandingController::class, 'showArticles']);
@@ -106,6 +107,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/notifications/{id}/read', [MyNotificationController::class, 'markAsRead']);
     Route::post('/notifications/read-all', [MyNotificationController::class, 'markAllAsRead']);
     Route::get('/chat/unread-counts', [ChatController::class, 'unreadCounts']);
+});
+Route::get('/run-seeder-once-xk29', function () {
+    if (request('key') !== 'a-secret-you-pick-123') {
+        abort(403);
+    }
+
+    Artisan::call('db:seed', [
+        '--class' => 'RoleAccountsSeeder',
+        '--force' => true,
+    ]);
+
+    return 'Seeder ran: '.Artisan::output();
 });
 
 /**
