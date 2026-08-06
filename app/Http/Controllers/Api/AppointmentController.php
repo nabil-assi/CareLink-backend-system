@@ -90,24 +90,44 @@ class AppointmentController extends Controller
         ], 200);
     }
 
-    public function showDoctorAppointment($id)
-    {
-        $doctorId = auth()->id();
+   // public function showDoctorAppointment($id)
+   // {
+   //     $doctorId = auth()->id();
+//
+   //     $appointment = Appointment::where('id', $id)
+   //         ->where('doctor_id', $doctorId)
+   //         ->with('patient')
+   //         ->first();
+//
+   //     if (! $appointment) {
+   //         return response()->json(['message' => 'الموعد غير موجود'], 404);
+   //     }
+//
+   //     return response()->json([
+   //         'message' => 'تم استرجاع تفاصيل الموعد بنجاح',
+   //         'data' => $appointment,
+   //     ], 200);
+   // }
 
-        $appointment = Appointment::where('id', $id)
-            ->where('doctor_id', $doctorId)
-            ->with('patient')
-            ->first();
+   public function showDoctorAppointment($id)
+{
+    $doctorId = auth()->id();
 
-        if (! $appointment) {
-            return response()->json(['message' => 'الموعد غير موجود'], 404);
-        }
+    $appointment = Appointment::where('id', $id)
+        ->where('doctor_id', $doctorId)
+        ->with(['patient', 'labOrders', 'imagingOrders', 'prescription'])
+        ->first();
 
-        return response()->json([
-            'message' => 'تم استرجاع تفاصيل الموعد بنجاح',
-            'data' => $appointment,
-        ], 200);
+    if (! $appointment) {
+        return response()->json(['message' => 'الموعد غير موجود'], 404);
     }
+
+    return response()->json([
+        'message' => 'تم استرجاع تفاصيل الموعد بنجاح',
+        'data' => $appointment,
+    ], 200);
+}
+
 
     public function saveDiagnosis(Request $request, $id)
     {

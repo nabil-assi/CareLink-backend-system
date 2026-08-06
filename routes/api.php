@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\Reception\ReceptionController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Artisan;
+use App\Http\Controllers\Auth\GoogleAuthController;
 
 Route::get('/articles', [LandingController::class, 'getPublishedArticles']);
 Route::get('/articles/{slug}', [LandingController::class, 'showArticles']);
@@ -128,6 +129,11 @@ Route::get('/run-seeder-once-xk29', function () {
 
     return 'Seeder ran: '.Artisan::output();
 });
+
+
+Route::get('/api/auth/google', [GoogleAuthController::class, 'redirectToGoogle']);
+Route::get('/api/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback']);
+
 
 /**
  * *
