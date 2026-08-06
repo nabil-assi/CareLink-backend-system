@@ -131,8 +131,8 @@ Route::get('/run-seeder-once-xk29', function () {
 });
 
 
-Route::get('/api/auth/google', [GoogleAuthController::class, 'redirectToGoogle']);
-Route::get('/api/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback']);
+Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle']);
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback']);
 
 
 /**
