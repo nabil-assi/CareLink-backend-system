@@ -97,7 +97,7 @@ Route::middleware(['auth:sanctum', 'checkRole:laboratory'])->prefix('laboratory'
 // نفس الشي هون - كانت مفتوحة لأي حد يعدل كميات وأسعار المخزون بدون تسجيل دخول.
 // القراءة بس (عرض الأصناف) مسموحة لمدير المخزون والصيدلية سوا، لأنه شاشة
 // "توفر المخزون" بالصيدلية بتعتمد على GET items. التعديل/الحذف مقصور على مدير المخزون فقط.
-Route::middleware(['auth:sanctum', 'checkRole:inventory_manager,pharmacy'])->prefix('inventory')->group(function () {
+Route::middleware(['auth:sanctum', 'checkRole:inventory_manager,pharmacy, admin'])->prefix('inventory')->group(function () {
     Route::get('items', [InventoryController::class, 'index']);
     Route::get('items/{inventory}', [InventoryController::class, 'show']);
     Route::get('operations', [InventoryOperationController::class, 'index']);
