@@ -154,7 +154,10 @@ class PatientController extends Controller
 
         return response()->json([
             'message' => 'بيانات الملف الطبي',
-            'data' => $profile,
+            'data' => [
+                ...$profile->toArray(),
+                'national_id' => $request->user()->national_id,
+            ],
         ], 200);
     }
 
