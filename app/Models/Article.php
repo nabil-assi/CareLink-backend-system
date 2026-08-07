@@ -11,14 +11,15 @@ class Article extends Model
     use HasFactory;
 
     protected $fillable = [
-        'title', 
-        'slug', 
-        'category', 
-        'author', 
-        'excerpt', 
-        'content', 
-        'image', 
-        'status'
+        'title',
+        'slug',
+        'category',
+        'author',
+        'excerpt',
+        'content',
+        'image',
+        'status',
+        'featured',
     ];
 
     // ميزة احترافية: إنشاء الـ slug أوتوماتيكياً عند الحفظ

@@ -4,10 +4,26 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Article;
+use App\Models\Faq;
+use App\Models\Testimonial;
 use App\Models\User;
 
 class LandingController extends Controller
 {
+    public function getFaqs()
+    {
+        return response()->json([
+            'data' => Faq::where('status', 'published')->latest()->get(),
+        ], 200);
+    }
+
+    public function getTestimonials()
+    {
+        return response()->json([
+            'data' => Testimonial::where('status', 'published')->latest()->get(),
+        ], 200);
+    }
+
     public function getPublishedArticles()
     {
         try {

@@ -17,12 +17,20 @@ public function store(Request $request) {
         'category' => 'required',
         'author' => 'required',
         'excerpt' => 'required',
-        'status' => 'required'
+        'content' => 'nullable|string',
+        'status' => 'required',
+        'featured' => 'nullable|boolean',
+        'image' => 'nullable|image|max:2048',
     ]);
+
+    if ($request->hasFile('image')) {
+        $data['image'] = $request->file('image')->store('articles', 'public');
+    }
+
     return response()->json(Article::create($data), 201);
 }
 
-public function update(Request $request, $id) 
+public function update(Request $request, $id)
 {
     $article = Article::findOrFail($id);
 
@@ -32,8 +40,17 @@ public function update(Request $request, $id)
         'category' => 'required|string|max:100',
         'author' => 'required|string|max:100',
         'excerpt' => 'required|string',
+        'content' => 'nullable|string',
         'status' => 'required|in:published,draft',
+        'featured' => 'nullable|boolean',
+        'image' => 'nullable|image|max:2048',
     ]);
+
+    if ($request->hasFile('image')) {
+        $validated['image'] = $request->file('image')->store('articles', 'public');
+    } else {
+        unset($validated['image']);
+    }
 
     $article->update($validated);
 

@@ -30,6 +30,8 @@ use App\Http\Controllers\Auth\GoogleAuthController;
 Route::get('/articles', [LandingController::class, 'getPublishedArticles']);
 Route::get('/articles/{slug}', [LandingController::class, 'showArticles']);
 Route::get('/home/doctors', [LandingController::class, 'getDoctors']);
+Route::get('/faqs', [LandingController::class, 'getFaqs']);
+Route::get('/testimonials', [LandingController::class, 'getTestimonials']);
 Route::post('/contact', [ContactController::class, 'store']);
 Route::get('/settings/contact', [ContactController::class, 'getContactSettings']); // اختياري لجلب بيانات التواصل ديناميكياً
 Route::get('/home/settings', [SettingController::class, 'index']);

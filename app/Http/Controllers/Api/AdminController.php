@@ -16,39 +16,46 @@ class AdminController extends Controller
 {
     public function store(Request $request)
     {
-        // 1. تحقق صارم يتطابق مع الحقول المرسلة من React
+        // 1. تحقق صارم يتطابق مع نفس حقول فورم AddNewDoctor بالفرونت
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8',
-            'phone' => 'nullable|string|max:20',
-            'specialty' => 'nullable|string|max:255',
-            'national_id' => 'nullable|string|max:50',
-            'address' => 'nullable|string|max:500',
+            'phone' => 'required|string|max:20',
+            'date_of_birth' => 'required|date',
+            'national_id' => 'required|string|max:50',
+            'address' => 'required|string|max:500',
             'gender' => 'required|in:male,female',
+            'specialty' => 'required|string|max:255',
+            'years_of_experience' => 'required|integer|min:0|max:60',
+            'credential_document' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
         ]);
 
+        $credentialPath = $request->file('credential_document')->store('documents', 'public');
+
         // استخدام Transaction لضمان عدم إنشاء مستخدم بدون بروفايل في حال حدوث خطأ
-        return DB::transaction(function () use ($validated) {
+        return DB::transaction(function () use ($validated, $credentialPath) {
 
             // 2. إنشاء المستخدم الأساسي
             $user = User::create([
                 'name' => $validated['name'], // تأكد أن اسم العمود في الداتا بيز name وليس full_name
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
-                'phone' => $validated['phone'] ?? null,
-                'national_id' => $validated['national_id'] ?? null,
+                'phone' => $validated['phone'],
+                'national_id' => $validated['national_id'],
                 'role' => 'doctor',
             ]);
 
             // 3. إنشاء البروفايل الخاص بالطبيب بحالة Active فوراً
             $user->doctorProfile()->create([
-                'specialty' => $validated['specialty'] ?? 'غير محدد',
-                'national_id' => $validated['national_id'] ?? null,
-                'address' => $validated['address'] ?? null,
+                'specialty' => $validated['specialty'],
+                'national_id' => $validated['national_id'],
+                'address' => $validated['address'],
                 'gender' => $validated['gender'],
+                'date_of_birth' => $validated['date_of_birth'],
+                'years_of_experience' => $validated['years_of_experience'],
+                'credential_document' => $credentialPath,
                 'status' => 'active', // مفعل تلقائياً لأن الأدمن من أضافه
-                // 'credential_document' => null, // تركناها فارغة ليقوم الطبيب برفعها لاحقاً
             ]);
 
             // لا ترجع أي Token هنا، فقط رسالة نجاح
