@@ -28,6 +28,11 @@ RUN npm install && npm run build
 # إعداد الصلاحيات
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
 
+RUN php artisan storage:link \
+    && chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache \
+    && chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+
+    
 # تشغيل السيرفر
 EXPOSE 8000
 # استبدل السطر الأخير (CMD) بهذا:
