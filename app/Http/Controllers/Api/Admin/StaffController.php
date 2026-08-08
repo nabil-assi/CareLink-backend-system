@@ -118,6 +118,16 @@ class StaffController extends Controller
             ? $request->file('credential_document')->store('documents', 'public')
             : null;
 
+        // لازم نتحقق قبل أي تعديل على الداتابيز - كانت هاي الرسالة بترجع 422
+        // بس بعد ما التحديث صار فعلياً على جدول users والبروفايل، يعني "الفشل"
+        // كان بيسجل تعديل جزئي بصمت رغم رسالة الخطأ
+        if ($needsCredential && ! $credentialPath && ! $user->credential_document) {
+            return response()->json([
+                'message' => 'يرجى إرفاق ملف الشهادة أو الـ CV',
+                'errors' => ['credential_document' => ['هذا الحقل إلزامي لهذا الدور']],
+            ], 422);
+        }
+
         // 1. تحديث بيانات جدول users
         $userUpdate = [
             'name' => $validated['name'],
@@ -150,13 +160,6 @@ class StaffController extends Controller
             $user->doctorProfile()->updateOrCreate(['user_id' => $user->id], $profileData);
         } elseif ($user->role === 'reception') {
             $user->receptionistProfile()->updateOrCreate(['user_id' => $user->id], []);
-        }
-
-        if ($needsCredential && ! $credentialPath && ! $user->credential_document) {
-            return response()->json([
-                'message' => 'يرجى إرفاق ملف الشهادة أو الـ CV',
-                'errors' => ['credential_document' => ['هذا الحقل إلزامي لهذا الدور']],
-            ], 422);
         }
 
         return response()->json(['message' => 'تم التحديث بنجاح', 'data' => $user]);
