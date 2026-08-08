@@ -7,14 +7,14 @@ use Illuminate\Support\Facades\Route;
 // checkRole زي باقي الأدوار
 Route::middleware(['auth:sanctum', 'checkRole:reception'])->prefix('reception')->group(function () {
     Route::get('/patients', [ReceptionController::class, 'listPatients']);
+    Route::post('/patients', [ReceptionController::class, 'registerPatient']);
     Route::post('/register-and-book', [ReceptionController::class, 'registerAndBook']);
 
     Route::get('/doctor-schedule', [ReceptionController::class, 'getDoctorSchedule']);
     Route::post('/appointments', [ReceptionController::class, 'storeAppointment']);
     Route::get('/appointments/all', [ReceptionController::class, 'getAllAppointments']);
-    // Route::post('/patients', [ReceptionController::class, 'registerPatient']);
-    // Route::post('/patients', [ReceptionController::class, 'storePatient']);
     Route::put('/patients/{id}/meta', [ReceptionController::class, 'updatePatientMeta']);
+    Route::delete('/patients/{id}', [ReceptionController::class, 'destroyPatient']);
 
     //  Route::post('/appointments', [ReceptionController::class, 'createAppointment']);
     Route::put('/appointments/{id}', [ReceptionController::class, 'updateAppointment']);

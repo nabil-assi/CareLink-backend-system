@@ -203,6 +203,14 @@ class ReceptionController extends Controller
         return response()->json(['message' => 'تم التحديث بنجاح', 'data' => $patient], 200);
     }
 
+    public function destroyPatient($id)
+    {
+        $patient = Patient::findOrFail($id);
+        $patient->delete();
+
+        return response()->json(['message' => 'تم حذف المريض بنجاح']);
+    }
+
     public function listDoctors()
     {
         // تحديد الجدول صراحة لحل أي تداخل محتمل في الاستعلام

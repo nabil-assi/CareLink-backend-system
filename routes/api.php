@@ -22,7 +22,6 @@ use App\Http\Controllers\Api\PatientAuthController;
 use App\Http\Controllers\Api\PatientController;
 use App\Http\Controllers\Api\PharmacyController;
 use App\Http\Controllers\Api\ProfileController;
-use App\Http\Controllers\Api\Reception\ReceptionController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\Auth\GoogleAuthController;
@@ -85,7 +84,6 @@ Route::middleware(['auth:sanctum', 'checkRole:admin'])->group(function () {
 
     Route::get('/admin/appointments', [AppointmentController::class, 'index']);
 });
-Route::post('/reception/patients', [ReceptionController::class, 'registerPatient']);
 
 // كانت هاي المسارات مفتوحة من غير تسجيل دخول إطلاقاً - أي حد بيقدر يشوف/يعدل
 // نتائج التحاليل. ضفنا نفس الحماية (auth:sanctum + checkRole) يلي عند باقي الأدوار
