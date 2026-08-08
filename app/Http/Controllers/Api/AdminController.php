@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Appointment;
 use App\Models\Broadcast;
 use App\Models\User;
 use App\Services\NotificationService;
@@ -64,6 +65,15 @@ class AdminController extends Controller
                 'message' => 'تم إضافة الطبيب وتفعيله بنجاح',
             ], 201);
         });
+    }
+
+    public function getAllAppointments()
+    {
+        $appointments = Appointment::with(['patient', 'doctor:id,name', 'rating'])
+            ->latest('scheduled_at')
+            ->get();
+
+        return response()->json(['data' => $appointments]);
     }
 
     public function getAllAdmins()
