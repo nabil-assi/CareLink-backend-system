@@ -43,6 +43,34 @@ class RadiologyController extends Controller
         return response()->json(['status' => true, 'data' => $orders], 200);
     }
 
+    // طلبات الأشعة الخاصة بالطبيب المسجل دخوله (كل الحالات، مش بس completed)
+    public function doctorIndex()
+    {
+        $orders = ImagingOrder::where('doctor_id', auth()->id())
+            ->with(['appointment.patient', 'doctor'])
+            ->latest()
+            ->get()
+            ->map(function ($order) {
+                $patient = $order->appointment?->patient;
+
+                return [
+                    'id' => $order->id,
+                    'patient' => $patient->full_name ?? $patient->name ?? 'مريض غير معروف',
+                    'doctor' => $order->doctor->name ?? 'طبيب غير معروف',
+                    'studies' => $order->studies,
+                    'modality' => $order->modality,
+                    'priority' => $order->priority,
+                    'status' => $order->status,
+                    'resultText' => $order->result_text,
+                    'completedAt' => $order->completed_at,
+                    'createdAt' => $order->created_at,
+                    'appointmentId' => $order->appointment_id,
+                ];
+            });
+
+        return response()->json(['status' => true, 'data' => $orders], 200);
+    }
+
     public function show($id)
 {
     $order = ImagingOrder::with(['appointment.patient', 'doctor'])->find($id);

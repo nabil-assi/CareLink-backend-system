@@ -39,7 +39,9 @@ Route::middleware(['auth:sanctum', 'checkRole:doctor'])->prefix('doctor')->group
     Route::get('/broadcasts', [DoctorController::class, 'getBroadcasts']);
     Route::post('/appointments/{appointment}/prescriptions', [AppointmentController::class, 'storePrescription']);
 
+    Route::get('/lab-orders', [LabOrderController::class, 'doctorIndex']);
     Route::get('/lab-orders/{id}', [LabOrderController::class, 'show']);
-    Route::get('/imaging-orders/{id}', [ImagingOrderController::class, 'show']);
+    Route::get('/imaging-orders', [RadiologyController::class, 'doctorIndex']);
+    Route::get('/imaging-orders/{id}', [RadiologyController::class, 'show']);
 
 });

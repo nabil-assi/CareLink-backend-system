@@ -40,6 +40,35 @@ class LabOrderController extends Controller
     }
 
 
+    // طلبات المختبر الخاصة بالطبيب المسجل دخوله (كل الحالات، مش بس completed
+    // - عكس readyResults بـ DoctorController::homeStats يلي بتعرض الجاهزة بس)
+    public function doctorIndex()
+    {
+        $orders = LabOrder::where('doctor_id', auth()->id())
+            ->with(['appointment.patient', 'doctor'])
+            ->latest()
+            ->get()
+            ->map(function ($order) {
+                $patient = $order->resolvePatient();
+
+                return [
+                    'id' => $order->id,
+                    'patient' => $patient->full_name ?? $patient->name ?? 'مريض غير معروف',
+                    'doctor' => $order->doctor->name ?? 'طبيب غير معروف',
+                    'tests' => $order->tests,
+                    'sampleId' => $order->sample_id,
+                    'priority' => $order->priority,
+                    'status' => $order->status,
+                    'resultText' => $order->result_text,
+                    'completedAt' => $order->completed_at,
+                    'createdAt' => $order->created_at,
+                    'appointmentId' => $order->appointment_id,
+                ];
+            });
+
+        return response()->json(['status' => true, 'data' => $orders], 200);
+    }
+
     public function show($id)
 {
     $order = LabOrder::with(['appointment.patient', 'doctor'])->find($id);
