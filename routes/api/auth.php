@@ -33,3 +33,10 @@ Route::prefix('auth')->group(function () {
     Route::post('/staff/login', [StaffAuthController::class, 'login']);
 
 });
+
+// تغيير كلمة المرور الإجبارية بعد كلمة مرور مؤقتة - الفرونت بيجرب المسار
+// الأول وبعدين البديل كـ fallback، فربطنا الاثنين بنفس الميثود
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/auth/staff/change-password', [StaffAuthController::class, 'changePassword']);
+    Route::post('/auth/change-password', [StaffAuthController::class, 'changePassword']);
+});
