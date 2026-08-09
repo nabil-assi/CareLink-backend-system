@@ -203,6 +203,26 @@ class ReceptionController extends Controller
         return response()->json(['message' => 'تم التحديث بنجاح', 'data' => $patient], 200);
     }
 
+    // تعديل البيانات الأساسية للمريض - الفرونت (ReceptionRegisterPatientModal)
+    // كان بينادي هالمسار عند التعديل بس ما كان موجود إطلاقاً، فتعديل أي مريض
+    // كان بيفشل بالكامل (حتى التأمين/الملاحظات يلي بتنحفظ لحالها عبر /meta)
+    public function updatePatient(Request $request, $id)
+    {
+        $patient = Patient::findOrFail($id);
+
+        $validated = $request->validate([
+            'full_name' => 'required|string|max:255',
+            'phone' => 'required|string|unique:patients,phone,'.$patient->id,
+            'national_id' => 'nullable|string|unique:patients,national_id,'.$patient->id,
+            'birth_date' => 'nullable|date',
+            'address' => 'nullable|string',
+        ]);
+
+        $patient->update($validated);
+
+        return response()->json(['message' => 'تم تحديث بيانات المريض بنجاح', 'data' => $patient]);
+    }
+
     public function destroyPatient($id)
     {
         $patient = Patient::findOrFail($id);
