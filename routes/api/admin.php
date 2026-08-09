@@ -67,6 +67,7 @@ Route::middleware(['auth:sanctum', 'checkRole:admin'])->prefix('admin')->group(f
     Route::put('/password', [AdminController::class, 'updatePassword']);
 
     Route::get('/reception-patients', [PatientController::class, 'getReceptionPatients']);
+    Route::get('/appointments', [AdminController::class, 'getAllAppointments']);
 
     Route::get('/staff', [StaffController::class, 'index']);
     Route::post('/staff', [StaffController::class, 'store']);
