@@ -23,6 +23,7 @@ class Patient extends Model
         'insurance_provider',
         'reception_flags',
         'reception_note',
+        'user_id',
     ];
 
     protected $casts = [
@@ -39,6 +40,13 @@ class Patient extends Model
     public function dependents(): HasMany
     {
         return $this->hasMany(Patient::class, 'guardian_id');
+    }
+
+    // حساب الويب المرتبط بهذا المريض (لو تم إنشاؤه من الاستقبال بزر
+    // "إنشاء حساب ويب") - غير موجود لمعظم مرضى الاستقبال العاديين
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
 }
