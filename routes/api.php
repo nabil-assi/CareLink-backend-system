@@ -99,17 +99,17 @@ Route::middleware(['auth:sanctum', 'checkRole:laboratory'])->prefix('laboratory'
 // نفس الشي هون - كانت مفتوحة لأي حد يعدل كميات وأسعار المخزون بدون تسجيل دخول.
 // القراءة بس (عرض الأصناف) مسموحة لمدير المخزون والصيدلية سوا، لأنه شاشة
 // "توفر المخزون" بالصيدلية بتعتمد على GET items. التعديل/الحذف مقصور على مدير المخزون فقط.
-Route::middleware(['auth:sanctum', 'checkRole:inventory_manager,pharmacy, admin'])->prefix('inventory')->group(function () {
-    Route::get('items', [InventoryController::class, 'index']);
-    Route::get('items/{inventory}', [InventoryController::class, 'show']);
-    Route::get('operations', [InventoryOperationController::class, 'index']);
+Route::middleware(['auth:sanctum', 'checkRole:inventory_manager,pharmacy,admin'])->prefix('inventory')->group(function () {
+    Route::get('/items', [InventoryController::class, 'index']);
+    Route::get('/items/{inventory}', [InventoryController::class, 'show']);
+    Route::get('/operations', [InventoryOperationController::class, 'index']);
 });
 
 Route::middleware(['auth:sanctum', 'checkRole:inventory_manager,admin'])->prefix('inventory')->group(function () {
-    Route::post('items', [InventoryController::class, 'store']);
-    Route::put('items/{inventory}', [InventoryController::class, 'update']);
-    Route::delete('items/{inventory}', [InventoryController::class, 'destroy']);
-    Route::post('items/{inventory}/adjust', [InventoryController::class, 'adjust']);
+    Route::post('/items', [InventoryController::class, 'store']);
+    Route::put('/items/{inventory}', [InventoryController::class, 'update']);
+    Route::delete('/items/{inventory}', [InventoryController::class, 'destroy']);
+    Route::post('/items/{inventory}/adjust', [InventoryController::class, 'adjust']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -119,19 +119,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/notifications/read-all', [MyNotificationController::class, 'markAllAsRead']);
     Route::get('/chat/unread-counts', [ChatController::class, 'unreadCounts']);
 });
-Route::get('/run-seeder-once-xk29', function () {
-    if (request('key') !== 'a-secret-you-pick-123') {
-        abort(403);
-    }
-
-    Artisan::call('db:seed', [
-        '--class' => 'RoleAccountsSeeder',
-        '--force' => true,
-    ]);
-
-    return 'Seeder ran: '.Artisan::output();
-});
-
+ 
 
 Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle']);
 Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback']);
