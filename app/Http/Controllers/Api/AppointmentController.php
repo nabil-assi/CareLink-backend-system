@@ -22,43 +22,63 @@ class AppointmentController extends Controller
         ], 200);
     }
 
-    public function store(Request $request)
+    public function bookedSlots(Request $request, $doctorId)
 {
-    $validated = $request->validate([
-        'doctor_id' => 'required|exists:users,id,role,doctor',
-        'scheduled_at' => 'required|date',
-        'type' => 'sometimes|in:online,in_person', // التحقق من نوع الموعد
-        'description' => 'nullable|string|max:500', // التحقق من الوصف
-    ]);
+    $date = $request->query('date');
 
-    // التحقق إذا كان الموعد محجوزاً مسبقاً
-    $exists = Appointment::where('doctor_id', $validated['doctor_id'])
-        ->where('scheduled_at', $validated['scheduled_at'])
-        ->whereIn('status', ['pending', 'scheduled'])
-        ->exists();
-
-    if ($exists) {
-        return response()->json([
-            'message' => 'هذا الموعد محجوز مسبقاً',
-        ], 409);
+    if (!$date) {
+        return response()->json(['data' => []], 200);
     }
 
-    // إنشاء الموعد مع حفظ النوع والوصف المرسل من الواجهة الأمامية
-    $appointment = Appointment::create([
-        'patient_id' => $request->user()->id,
-        'patient_type' => User::class,
-        'doctor_id' => $validated['doctor_id'],
-        'scheduled_at' => $validated['scheduled_at'],
-        'type' => $validated['type'] ?? 'in_person', // حفظ النوع أو افتراضي
-        'description' => $validated['description'] ?? null, // حفظ الوصف
-        'status' => 'pending',
-    ]);
+    // كل الأوقات المحجوزة لهذا الطبيب باليوم المحدد، ما عدا الملغاة
+    $slots = Appointment::where('doctor_id', $doctorId)
+        ->whereDate('scheduled_at', $date)
+        ->where('status', '!=', 'cancelled')
+        ->pluck('scheduled_at')
+        ->map(fn ($dt) => \Carbon\Carbon::parse($dt)->format('H:i'))
+        ->values();
 
-    return response()->json([
-        'message' => 'تم حجز الموعد بنجاح',
-        'data' => $appointment,
-    ], 201);
+    return response()->json(['data' => $slots], 200);
 }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'doctor_id' => 'required|exists:users,id,role,doctor',
+            'scheduled_at' => 'required|date',
+            'type' => 'sometimes|in:online,in_person', // التحقق من نوع الموعد
+            'description' => 'nullable|string|max:500', // التحقق من الوصف
+        ]);
+
+        // التحقق إذا كان الموعد محجوزاً مسبقاً
+        $exists = Appointment::where('doctor_id', $validated['doctor_id'])
+            ->where('scheduled_at', $validated['scheduled_at'])
+            ->whereIn('status', ['pending', 'scheduled'])
+            ->exists();
+
+        if ($exists) {
+            return response()->json([
+                'message' => 'هذا الموعد محجوز مسبقاً',
+            ], 409);
+        }
+
+        // إنشاء الموعد مع حفظ النوع والوصف المرسل من الواجهة الأمامية
+        $appointment = Appointment::create([
+            'patient_id' => $request->user()->id,
+            'patient_type' => User::class,
+            'doctor_id' => $validated['doctor_id'],
+            'scheduled_at' => $validated['scheduled_at'],
+            'type' => $validated['type'] ?? 'in_person', // حفظ النوع أو افتراضي
+            'description' => $validated['description'] ?? null, // حفظ الوصف
+            'status' => 'pending',
+        ]);
+
+        return response()->json([
+            'message' => 'تم حجز الموعد بنجاح',
+            'data' => $appointment,
+        ], 201);
+    }
+
     public function getPatientAppointments(Request $request)
     {
         // patient_type لازم كمان، وإلا ممكن نجيب موعد مريض استقبال بالصدفة إذا تصادف نفس الـ id
@@ -90,44 +110,43 @@ class AppointmentController extends Controller
         ], 200);
     }
 
-   // public function showDoctorAppointment($id)
-   // {
-   //     $doctorId = auth()->id();
-//
-   //     $appointment = Appointment::where('id', $id)
-   //         ->where('doctor_id', $doctorId)
-   //         ->with('patient')
-   //         ->first();
-//
-   //     if (! $appointment) {
-   //         return response()->json(['message' => 'الموعد غير موجود'], 404);
-   //     }
-//
-   //     return response()->json([
-   //         'message' => 'تم استرجاع تفاصيل الموعد بنجاح',
-   //         'data' => $appointment,
-   //     ], 200);
-   // }
+    // public function showDoctorAppointment($id)
+    // {
+    //     $doctorId = auth()->id();
+    //
+    //     $appointment = Appointment::where('id', $id)
+    //         ->where('doctor_id', $doctorId)
+    //         ->with('patient')
+    //         ->first();
+    //
+    //     if (! $appointment) {
+    //         return response()->json(['message' => 'الموعد غير موجود'], 404);
+    //     }
+    //
+    //     return response()->json([
+    //         'message' => 'تم استرجاع تفاصيل الموعد بنجاح',
+    //         'data' => $appointment,
+    //     ], 200);
+    // }
 
-   public function showDoctorAppointment($id)
-{
-    $doctorId = auth()->id();
+    public function showDoctorAppointment($id)
+    {
+        $doctorId = auth()->id();
 
-    $appointment = Appointment::where('id', $id)
-        ->where('doctor_id', $doctorId)
-        ->with(['patient', 'labOrders', 'imagingOrders', 'prescription'])
-        ->first();
+        $appointment = Appointment::where('id', $id)
+            ->where('doctor_id', $doctorId)
+            ->with(['patient', 'labOrders', 'imagingOrders', 'prescription'])
+            ->first();
 
-    if (! $appointment) {
-        return response()->json(['message' => 'الموعد غير موجود'], 404);
+        if (! $appointment) {
+            return response()->json(['message' => 'الموعد غير موجود'], 404);
+        }
+
+        return response()->json([
+            'message' => 'تم استرجاع تفاصيل الموعد بنجاح',
+            'data' => $appointment,
+        ], 200);
     }
-
-    return response()->json([
-        'message' => 'تم استرجاع تفاصيل الموعد بنجاح',
-        'data' => $appointment,
-    ], 200);
-}
-
 
     public function saveDiagnosis(Request $request, $id)
     {
@@ -162,7 +181,7 @@ class AppointmentController extends Controller
         $isOwnerPatient = $appointment->patient_type === User::class && $appointment->patient_id == $user->id;
         $isAssignedDoctor = $appointment->doctor_id == $user->id;
 
-        if (!$isOwnerPatient && !$isAssignedDoctor) {
+        if (! $isOwnerPatient && ! $isAssignedDoctor) {
             return response()->json([
                 'message' => 'غير مصرح لك بإلغاء هذا الموعد',
             ], 403);
@@ -347,7 +366,7 @@ class AppointmentController extends Controller
         ]);
     }
 
-public function doctorPatients()
+    public function doctorPatients()
     {
         $doctorId = auth()->id();
 
@@ -366,7 +385,7 @@ public function doctorPatients()
                 // محاولة جلب فصيلة الدم سواء كان المريض User أو Patient
                 $bloodType = null;
 
-                if ($patient instanceof \App\Models\User) {
+                if ($patient instanceof User) {
                     $bloodType = $patient->patientProfile?->blood_type;
                 } elseif (isset($patient->blood_type)) {
                     $bloodType = $patient->blood_type;
@@ -402,7 +421,7 @@ public function doctorPatients()
         // البحث عن الموعد الذي يطابق المريض المطلوبة (سواء كان ID المريض أو ID الـ User المرتبط)
         $appointment = $appointments->first(function ($apt) use ($id) {
             return $apt->patient && (
-                $apt->patient->id == $id || 
+                $apt->patient->id == $id ||
                 (isset($apt->patient->user_id) && $apt->patient->user_id == $id)
             );
         });

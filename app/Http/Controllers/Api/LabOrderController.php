@@ -39,6 +39,40 @@ class LabOrderController extends Controller
         return response()->json(['status' => true, 'data' => $orders], 200);
     }
 
+
+    public function show($id)
+{
+    $order = LabOrder::with(['appointment.patient', 'doctor'])->find($id);
+
+    if (!$order) {
+        return response()->json(['status' => false, 'message' => 'الطلب غير موجود'], 404);
+    }
+
+    $patient = $order->resolvePatient();
+
+    return response()->json([
+        'status' => true,
+        'data' => [
+            'id' => $order->id,
+            'patient' => $patient->full_name ?? $patient->name ?? 'مريض غير معروف',
+            'patientAge' => $patient?->birth_date ? Carbon::parse($patient->birth_date)->age : null,
+            'patientGender' => $patient->gender ?? null,
+            'doctor' => $order->doctor->name ?? 'طبيب غير معروف',
+            'tests' => $order->tests,
+            'sampleId' => $order->sample_id,
+            'clinicalReason' => $order->clinical_reason,
+            'notes' => $order->notes,
+            'priority' => $order->priority,
+            'status' => $order->status,
+            'resultText' => $order->result_text,
+            'completedBy' => $order->completed_by,
+            'completedAt' => $order->completed_at,
+            'createdAt' => $order->created_at,
+            'appointmentId' => $order->appointment_id,
+        ],
+    ], 200);
+}
+
     // بدء التنفيذ (تغيير الحالة إلى in_progress) - بدون إشعار
     public function start($id, Request $request)
     {

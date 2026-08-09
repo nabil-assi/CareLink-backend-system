@@ -43,6 +43,41 @@ class RadiologyController extends Controller
         return response()->json(['status' => true, 'data' => $orders], 200);
     }
 
+    public function show($id)
+{
+    $order = ImagingOrder::with(['appointment.patient', 'doctor'])->find($id);
+
+    if (!$order) {
+        return response()->json(['status' => false, 'message' => 'الطلب غير موجود'], 404);
+    }
+
+    $patient = $order->appointment?->patient;
+
+    return response()->json([
+        'status' => true,
+        'data' => [
+            'id' => $order->id,
+            'patient' => $patient->full_name ?? $patient->name ?? 'مريض غير معروف',
+            'patientAge' => $patient?->birth_date ? Carbon::parse($patient->birth_date)->age : null,
+            'patientGender' => $patient->gender ?? null,
+            'doctor' => $order->doctor->name ?? 'طبيب غير معروف',
+            'studies' => $order->studies,
+            'modality' => $order->modality,
+            'anatomy' => $order->anatomy,
+            'clinicalReason' => $order->clinical_reason,
+            'notes' => $order->notes,
+            'priority' => $order->priority,
+            'status' => $order->status,
+            'resultText' => $order->result_text,
+            'completedBy' => $order->completed_by,
+            'completedAt' => $order->completed_at,
+            'createdAt' => $order->created_at,
+            'appointmentId' => $order->appointment_id,
+        ],
+    ], 200);
+}
+
+
     // بدء التصوير (تغيير الحالة إلى in_progress)
     public function start($id)
     {

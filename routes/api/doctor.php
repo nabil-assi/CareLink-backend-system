@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\DoctorController;
+use App\Http\Controllers\Api\RadiologyController;
+use App\Http\Controllers\Api\LabOrderController;
+
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum', 'checkRole:doctor'])->prefix('doctor')->group(function () {
@@ -35,4 +38,8 @@ Route::middleware(['auth:sanctum', 'checkRole:doctor'])->prefix('doctor')->group
 
     Route::get('/broadcasts', [DoctorController::class, 'getBroadcasts']);
     Route::post('/appointments/{appointment}/prescriptions', [AppointmentController::class, 'storePrescription']);
+
+    Route::get('/lab-orders/{id}', [LabOrderController::class, 'show']);
+    Route::get('/imaging-orders/{id}', [ImagingOrderController::class, 'show']);
+
 });
