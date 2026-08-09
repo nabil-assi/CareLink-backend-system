@@ -93,6 +93,13 @@ class DoctorAuthController extends Controller
 
         $user = User::where('email', $request->email)->where('role', 'doctor')->first();
 
+        // exists:users,email بيتحقق من الإيميل بجدول users بشكل عام بس، مش
+        // مقيّد بدور الطبيب - فإيميل مريض/موظف صحيح كان بيعدي الفاليديشن
+        // وبعدين $user بيطلع null هون ويطلع خطأ 500 عند $user->email تحت
+        if (! $user) {
+            return response()->json(['message' => 'لا يوجد حساب طبيب بهذا البريد الإلكتروني'], 404);
+        }
+
         $otp = random_int(10000, 99999);
         Cache::put('otp_doctor_'.$user->email, $otp, now()->addMinutes(10));
 
