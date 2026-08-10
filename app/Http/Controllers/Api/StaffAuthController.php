@@ -44,9 +44,6 @@ class StaffAuthController extends Controller
             'user' => $user,
         ]);
     }
-<<<<<<< HEAD
-}
-=======
 
     // شاشة "تغيير كلمة المرور الإجبارية" بعد أول دخول بكلمة مرور مؤقتة من الإدارة
     // - شغالة لأي دور مسجل دخول (staff, doctor, admin) مش بس أدوار الموظفين
@@ -65,4 +62,3 @@ class StaffAuthController extends Controller
         return response()->json(['message' => 'تم تحديث كلمة المرور بنجاح']);
     }
 }
->>>>>>> 2f82eb184ef7ade2b6c2b03c604606168f0d0d95
