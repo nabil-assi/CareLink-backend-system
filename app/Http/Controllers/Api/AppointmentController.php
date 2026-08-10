@@ -50,10 +50,13 @@ class AppointmentController extends Controller
             'description' => 'nullable|string|max:500', // التحقق من الوصف
         ]);
 
-        // التحقق إذا كان الموعد محجوزاً مسبقاً
+        // التحقق إذا كان الموعد محجوزاً مسبقاً - "scheduled" مش حالة حقيقية
+        // بهالنظام أصلاً (updateStatus بيقبل بس pending/confirmed/completed/
+        // cancelled)، فأي موعد صار "confirmed" كان فعلياً بيرجع قابل للحجز من
+        // جديد. خليناها != cancelled زي نفس المنطق المستخدم بـ bookedSlots
         $exists = Appointment::where('doctor_id', $validated['doctor_id'])
             ->where('scheduled_at', $validated['scheduled_at'])
-            ->whereIn('status', ['pending', 'scheduled'])
+            ->where('status', '!=', 'cancelled')
             ->exists();
 
         if ($exists) {
@@ -478,10 +481,10 @@ class AppointmentController extends Controller
             ], 403);
         }
 
-        // تأكد أن الوقت الجديد غير محجوز
+        // تأكد أن الوقت الجديد غير محجوز - نفس تصحيح store() فوق
         $exists = Appointment::where('doctor_id', $appointment->doctor_id)
             ->where('scheduled_at', $validated['scheduled_at'])
-            ->whereIn('status', ['pending', 'scheduled'])
+            ->where('status', '!=', 'cancelled')
             ->where('id', '!=', $appointment->id)
             ->exists();
 

@@ -68,6 +68,9 @@ class StaffController extends Controller
             'specialty' => $validated['specialty'] ?? null,
             'credential_document' => $credentialPath,
             'status' => true,
+            // الفرونت بيسمي حقل الباسورد هون "كلمة المرور المؤقتة" - لازم
+            // نجبر تغييرها أول تسجيل دخول
+            'must_change_password' => true,
         ]);
 
         // 2. لو الدور إله جدول profile مخصص (طبيب/استقبال) منعمّره كمان

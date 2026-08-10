@@ -21,6 +21,13 @@ class DoctorAuthController extends Controller
             'phone' => 'required|string',
             'specialty' => 'required|string',
             'credential_document' => 'required|file|mimes:pdf,jpg,png|max:2048',
+            // كانت هاي كلها موجودة بفورم تسجيل الطبيب وبيرسلها الفرونت دايماً،
+            // بس ما كانت متحقق منها ولا بتنحفظ - بتضيع بصمت
+            'national_id' => 'nullable|string',
+            'date_of_birth' => 'nullable|date',
+            'address' => 'nullable|string|max:500',
+            'gender' => 'nullable|in:male,female',
+            'years_of_experience' => 'nullable|integer|min:0|max:60',
         ]);
 
         return DB::transaction(function () use ($validated, $request) {
@@ -32,6 +39,7 @@ class DoctorAuthController extends Controller
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
                 'phone' => $validated['phone'],
+                'national_id' => $validated['national_id'] ?? null,
                 'role' => 'doctor',
             ]);
 
@@ -39,6 +47,11 @@ class DoctorAuthController extends Controller
             $user->doctorProfile()->create([
                 'specialty' => $validated['specialty'],
                 'credential_document' => $path,
+                'national_id' => $validated['national_id'] ?? null,
+                'date_of_birth' => $validated['date_of_birth'] ?? null,
+                'address' => $validated['address'] ?? null,
+                'gender' => $validated['gender'] ?? null,
+                'years_of_experience' => $validated['years_of_experience'] ?? null,
                 'status' => 'inactive',
             ]);
 
@@ -79,6 +92,13 @@ class DoctorAuthController extends Controller
         $request->validate(['email' => 'required|email|exists:users,email']);
 
         $user = User::where('email', $request->email)->where('role', 'doctor')->first();
+
+        // exists:users,email بيتحقق من الإيميل بجدول users بشكل عام بس، مش
+        // مقيّد بدور الطبيب - فإيميل مريض/موظف صحيح كان بيعدي الفاليديشن
+        // وبعدين $user بيطلع null هون ويطلع خطأ 500 عند $user->email تحت
+        if (! $user) {
+            return response()->json(['message' => 'لا يوجد حساب طبيب بهذا البريد الإلكتروني'], 404);
+        }
 
         $otp = random_int(10000, 99999);
         Cache::put('otp_doctor_'.$user->email, $otp, now()->addMinutes(10));

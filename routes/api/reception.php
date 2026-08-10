@@ -13,6 +13,7 @@ Route::middleware(['auth:sanctum', 'checkRole:reception'])->prefix('reception')-
     Route::get('/doctor-schedule', [ReceptionController::class, 'getDoctorSchedule']);
     Route::post('/appointments', [ReceptionController::class, 'storeAppointment']);
     Route::get('/appointments/all', [ReceptionController::class, 'getAllAppointments']);
+    Route::put('/patients/{id}', [ReceptionController::class, 'updatePatient']);
     Route::put('/patients/{id}/meta', [ReceptionController::class, 'updatePatientMeta']);
     Route::delete('/patients/{id}', [ReceptionController::class, 'destroyPatient']);
 

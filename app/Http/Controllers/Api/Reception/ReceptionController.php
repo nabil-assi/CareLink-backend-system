@@ -10,6 +10,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB; // كانت ناقصة و DB::transaction() بـ registerAndBook() تحتها كان رح يطلع "Undefined type" وقت التشغيل
+use Illuminate\Support\Facades\Hash;
 
 class ReceptionController extends Controller
 {
@@ -22,16 +23,52 @@ class ReceptionController extends Controller
     public function registerPatient(Request $request)
     {
         // التحقق من البيانات المطلوبة فقط
+        $wantsWebAccount = $request->boolean('create_web_account');
+
         $validated = $request->validate([
             'full_name' => 'required|string|max:255',
             'phone' => 'required|string|unique:patients,phone',
-            'national_id' => 'required|string|unique:patients,national_id',
+            // لازم نتحقق من جدول users كمان لو رح ينعمل حساب - وإلا SQL error
+            // خام (500) بدل رسالة واضحة لو نفس الشخص عنده حساب أصلاً (موظف مثلاً)
+            'national_id' => $wantsWebAccount
+                ? 'required|string|unique:patients,national_id|unique:users,national_id'
+                : 'required|string|unique:patients,national_id',
             'birth_date' => 'required|date',
             'address' => 'nullable|string',
+            'create_web_account' => 'nullable|boolean',
+            'email' => 'required_if:create_web_account,1,true|nullable|email|unique:users,email',
+            'password' => 'required_if:create_web_account,1,true|nullable|string|min:6',
         ]);
 
-        // إنشاء سجل مريض جديد مباشرة
-        $patient = Patient::create($validated);
+        $patient = DB::transaction(function () use ($validated, $request) {
+            $patient = Patient::create([
+                'full_name' => $validated['full_name'],
+                'phone' => $validated['phone'],
+                'national_id' => $validated['national_id'],
+                'birth_date' => $validated['birth_date'],
+                'address' => $validated['address'] ?? null,
+            ]);
+
+            // زر "إنشاء حساب ويب للمريض" بمودال الاستقبال - كان بيبعت
+            // email/password بدون أي أثر فعلي، ما كان في عمود ربط أصلاً
+            if ($request->boolean('create_web_account')) {
+                $user = User::create([
+                    'name' => $validated['full_name'],
+                    'email' => $validated['email'],
+                    'password' => Hash::make($validated['password']),
+                    'phone' => $validated['phone'],
+                    'national_id' => $validated['national_id'],
+                    'birth_date' => $validated['birth_date'],
+                    'address' => $validated['address'] ?? null,
+                    'role' => 'patient',
+                    'status' => true,
+                ]);
+
+                $patient->update(['user_id' => $user->id]);
+            }
+
+            return $patient;
+        });
 
         return response()->json([
             'message' => 'تم إنشاء ملف المريض بنجاح',
@@ -201,6 +238,26 @@ class ReceptionController extends Controller
         $patient->update($validated);
 
         return response()->json(['message' => 'تم التحديث بنجاح', 'data' => $patient], 200);
+    }
+
+    // تعديل البيانات الأساسية للمريض - الفرونت (ReceptionRegisterPatientModal)
+    // كان بينادي هالمسار عند التعديل بس ما كان موجود إطلاقاً، فتعديل أي مريض
+    // كان بيفشل بالكامل (حتى التأمين/الملاحظات يلي بتنحفظ لحالها عبر /meta)
+    public function updatePatient(Request $request, $id)
+    {
+        $patient = Patient::findOrFail($id);
+
+        $validated = $request->validate([
+            'full_name' => 'required|string|max:255',
+            'phone' => 'required|string|unique:patients,phone,'.$patient->id,
+            'national_id' => 'nullable|string|unique:patients,national_id,'.$patient->id,
+            'birth_date' => 'nullable|date',
+            'address' => 'nullable|string',
+        ]);
+
+        $patient->update($validated);
+
+        return response()->json(['message' => 'تم تحديث بيانات المريض بنجاح', 'data' => $patient]);
     }
 
     public function destroyPatient($id)

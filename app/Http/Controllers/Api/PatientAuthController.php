@@ -23,6 +23,11 @@ class PatientAuthController extends Controller
             // الحقول الأخرى التي كانت في الـ patient القديم (مثل الهوية)
             // يفضل وضعها في بروفايل أو جدول مستخدمين موسع
             'national_id' => 'required|string|unique:users',
+            // كانت هاي الثلاثة موجودة بفورم التسجيل وبيرسلها الفرونت دايماً، بس
+            // ما كانت متحقق منها ولا بتنحفظ - بتضيع بصمت رغم إنه المستخدم عبّاها
+            'date_of_birth' => 'nullable|date',
+            'address' => 'nullable|string|max:500',
+            'gender' => 'nullable|in:male,female',
         ]);
 
         return DB::transaction(function () use ($validated) {
@@ -33,6 +38,9 @@ class PatientAuthController extends Controller
                 'password' => Hash::make($validated['password']),
                 'phone' => $validated['phone'],
                 'national_id' => $validated['national_id'],
+                'birth_date' => $validated['date_of_birth'] ?? null,
+                'address' => $validated['address'] ?? null,
+                'gender' => $validated['gender'] ?? null,
                 'role' => 'patient',
             ]);
 

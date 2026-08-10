@@ -15,21 +15,23 @@ Route::prefix('auth')->group(function () {
     Route::post('/patient/login', [PatientAuthController::class, 'login']);
     Route::post('/patient/forgot-password', [PatientAuthController::class, 'forgotPassword']);
     Route::post('/patient/reset-password', [PatientAuthController::class, 'resetPassword']);
-
     // زر "المتابعة بـ Google" بصفحتي تسجيل الدخول/الحساب الجديد للمريض
     Route::get('/google/redirect', [GoogleAuthController::class, 'redirect']);
     Route::get('/google/callback', [GoogleAuthController::class, 'callback']);
-
- 
     Route::post('/doctor/register', [DoctorAuthController::class, 'register']);
     Route::post('/doctor/login', [DoctorAuthController::class, 'login']);
     Route::post('/doctor/forgot-password', [DoctorAuthController::class, 'forgotPassword']);
     Route::post('/doctor/reset-password', [DoctorAuthController::class, 'resetPassword']);
-
-        Route::post('/admin/login', [AdminAuthController::class, 'login']);
+    Route::post('/admin/login', [AdminAuthController::class, 'login']);
     Route::get('/admin/list', [AdminController::class, 'getAllAdmins']);
     Route::get('/admin/patients', [PatientController::class, 'getAllPatients']);
 
     Route::post('/staff/login', [StaffAuthController::class, 'login']);
+});
 
+// تغيير كلمة المرور الإجبارية بعد كلمة مرور مؤقتة - الفرونت بيجرب المسار
+// الأول وبعدين البديل كـ fallback، فربطنا الاثنين بنفس الميثود
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/auth/staff/change-password', [StaffAuthController::class, 'changePassword']);
+    Route::post('/auth/change-password', [StaffAuthController::class, 'changePassword']);
 });
