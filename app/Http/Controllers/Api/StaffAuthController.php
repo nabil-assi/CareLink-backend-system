@@ -13,9 +13,9 @@ class StaffAuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email'    => 'required|email',
+            'email' => 'required|email',
             'password' => 'required',
-            'role'     => 'required|in:reception,laboratory,pharmacy,radiology,inventory_manager',
+            'role' => 'required|in:reception,laboratory,pharmacy,radiology,inventory_manager',
         ]);
 
         $user = User::where('email', $request->email)->first();
@@ -40,8 +40,8 @@ class StaffAuthController extends Controller
 
         return response()->json([
             'message' => 'تم تسجيل الدخول بنجاح',
-            'token'   => $token,
-            'user'    => $user,
+            'token' => $token,
+            'user' => $user,
         ]);
     }
 }

@@ -26,7 +26,7 @@ Route::prefix('auth')->group(function () {
     Route::post('/doctor/forgot-password', [DoctorAuthController::class, 'forgotPassword']);
     Route::post('/doctor/reset-password', [DoctorAuthController::class, 'resetPassword']);
 
-    Route::post('/admin/login', [AdminAuthController::class, 'login']);
+        Route::post('/admin/login', [AdminAuthController::class, 'login']);
     Route::get('/admin/list', [AdminController::class, 'getAllAdmins']);
     Route::get('/admin/patients', [PatientController::class, 'getAllPatients']);
 
