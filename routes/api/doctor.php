@@ -33,6 +33,9 @@ Route::middleware(['auth:sanctum', 'checkRole:doctor'])->prefix('doctor')->group
 
     Route::get('/medical-records', [AppointmentController::class, 'getAllMedicalRecords']);
     Route::get('/prescriptions', [AppointmentController::class, 'doctorPrescriptions']);
+    Route::get('/refill-requests', [AppointmentController::class, 'doctorRefillRequests']);
+    Route::post('/refill-requests/{id}/approve', [AppointmentController::class, 'approveRefillRequest']);
+    Route::post('/refill-requests/{id}/deny', [AppointmentController::class, 'denyRefillRequest']);
     // حفظ السجل الطبي مرتبطاً بالموعد
     Route::get('/patients', [AppointmentController::class, 'doctorPatients']);
     Route::get('/patients/{id}', [AppointmentController::class, 'doctorPatientDetail']);

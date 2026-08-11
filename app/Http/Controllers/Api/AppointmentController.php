@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\ImagingOrder;
 use App\Models\LabOrder;
+use App\Models\Notification;
 use App\Models\Prescription;
+use App\Models\PrescriptionRefillRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -238,6 +240,97 @@ class AppointmentController extends Controller
             'message' => 'تم استرجاع الوصفات الطبية بنجاح',
             'data' => $prescriptions,
         ], 200);
+    }
+
+    // FR-06.11: طلبات تجديد الوصفات الموجّهة لهذا الطبيب
+    public function doctorRefillRequests()
+    {
+        $requests = PrescriptionRefillRequest::where('doctor_id', auth()->id())
+            ->with(['prescription', 'patient:id,name'])
+            ->latest()
+            ->get()
+            ->map(function ($req) {
+                return [
+                    'id' => $req->id,
+                    'prescriptionId' => $req->prescription_id,
+                    'patient' => $req->patient->name ?? 'مريض غير معروف',
+                    'medications' => $req->prescription->notes,
+                    'status' => $req->status,
+                    'patientNote' => $req->patient_note,
+                    'doctorNote' => $req->doctor_note,
+                    'requestedAt' => $req->created_at,
+                    'respondedAt' => $req->responded_at,
+                ];
+            });
+
+        return response()->json(['data' => $requests], 200);
+    }
+
+    // موافقة الطبيب على طلب التجديد - بترجع حالة الوصفة الأصلية pending
+    // عشان تدخل قائمة الصيدلية من جديد بدل ما نكرر سجل الوصفة بالكامل
+    public function approveRefillRequest($id)
+    {
+        $refillRequest = PrescriptionRefillRequest::where('doctor_id', auth()->id())
+            ->with('prescription.appointment')
+            ->findOrFail($id);
+
+        if ($refillRequest->status !== 'pending') {
+            return response()->json(['message' => 'تم الرد على هذا الطلب مسبقاً'], 422);
+        }
+
+        $refillRequest->update([
+            'status' => 'approved',
+            'responded_at' => now(),
+        ]);
+
+        $refillRequest->prescription->update([
+            'status' => 'pending',
+            'dispensed_at' => null,
+            'dispensed_by' => null,
+        ]);
+
+        Notification::create([
+            'type' => 'refill_approved',
+            'title' => 'تمت الموافقة على تجديد وصفتك',
+            'body' => 'وافق الطبيب على طلب التجديد، وصفتك بانتظار التجهيز بالصيدلية من جديد',
+            'appointment_id' => $refillRequest->prescription->appointment_id,
+            'notifiable_id' => $refillRequest->patient_id,
+            'notifiable_type' => User::class,
+        ]);
+
+        return response()->json(['message' => 'تمت الموافقة على طلب التجديد', 'data' => $refillRequest]);
+    }
+
+    public function denyRefillRequest(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'note' => 'nullable|string|max:500',
+        ]);
+
+        $refillRequest = PrescriptionRefillRequest::where('doctor_id', auth()->id())
+            ->with('prescription')
+            ->findOrFail($id);
+
+        if ($refillRequest->status !== 'pending') {
+            return response()->json(['message' => 'تم الرد على هذا الطلب مسبقاً'], 422);
+        }
+
+        $refillRequest->update([
+            'status' => 'denied',
+            'doctor_note' => $validated['note'] ?? null,
+            'responded_at' => now(),
+        ]);
+
+        Notification::create([
+            'type' => 'refill_denied',
+            'title' => 'تم رفض طلب تجديد الوصفة',
+            'body' => $validated['note'] ?? 'راجع الطبيب لمزيد من التفاصيل',
+            'appointment_id' => $refillRequest->prescription->appointment_id,
+            'notifiable_id' => $refillRequest->patient_id,
+            'notifiable_type' => User::class,
+        ]);
+
+        return response()->json(['message' => 'تم رفض طلب التجديد', 'data' => $refillRequest]);
     }
 
     public function getAllMedicalRecords()

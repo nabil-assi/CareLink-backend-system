@@ -22,6 +22,7 @@ Route::middleware(['auth:sanctum', 'checkRole:patient'])->prefix('patient')->gro
     Route::get('/doctors/{doctorId}/booked-slots', [AppointmentController::class, 'bookedSlots']);
 
     Route::get('/medical-records', [PatientController::class, 'myMedicalRecords']);
+    Route::post('/prescriptions/{id}/refill-request', [PatientController::class, 'requestPrescriptionRefill']);
     Route::get('/broadcasts', [PatientController::class, 'getBroadcasts']);
 
     Route::get('/doctors', [PatientController::class, 'doctors']);

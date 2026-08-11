@@ -29,4 +29,10 @@ class Prescription extends Model
     {
         return $this->hasMany(PrescriptionMedicine::class);
     }
+
+    // طلبات تجديد هاي الوصفة (FR-06.11)
+    public function refillRequests(): HasMany
+    {
+        return $this->hasMany(PrescriptionRefillRequest::class);
+    }
 }

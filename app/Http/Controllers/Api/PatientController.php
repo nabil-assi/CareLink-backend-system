@@ -6,8 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\Broadcast;
 use App\Models\DoctorRating;
+use App\Models\Notification;
 use App\Models\Patient;
 use App\Models\PatientProfile;
+use App\Models\Prescription;
+use App\Models\PrescriptionRefillRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -171,8 +174,11 @@ public function myMedicalRecords(Request $request)
         $records = Appointment::where('patient_id', $user->id)
             ->where('patient_type', User::class)
             // prescription محتاجينها عشان الفرونت يعرف الحالة الحقيقية للوصفة
-            // (قيد الانتظار/جاهزة/تم الصرف) بدل ما يفترض إنها "صدرت" دايماً
-            ->with(['doctor:id,name', 'prescription'])
+            // (قيد الانتظار/جاهزة/تم الصرف) بدل ما يفترض إنها "صدرت" دايماً -
+            // وآخر طلب تجديد (إن وجد) عشان الفرونت يعرف إذا في طلب معلّق أصلاً
+            ->with(['doctor:id,name', 'prescription.refillRequests' => function ($query) {
+                $query->latest()->limit(1);
+            }])
             ->latest()
             ->get();
 
@@ -191,6 +197,61 @@ public function myMedicalRecords(Request $request)
             'data' => $records,
             'labs' => $labs, // إرسال التحاليل مع الـ Response
         ]);
+    }
+
+    // FR-06.11: المريض يطلب تجديد وصفة مصروفة سابقاً - الطلب يروح للطبيب يلي
+    // كتب الوصفة الأصلية للموافقة أو الرفض
+    public function requestPrescriptionRefill(Request $request, $prescriptionId)
+    {
+        $validated = $request->validate([
+            'note' => 'nullable|string|max:500',
+        ]);
+
+        $user = $request->user();
+
+        $prescription = Prescription::with('appointment')
+            ->whereHas('appointment', function ($query) use ($user) {
+                $query->where('patient_id', $user->id)->where('patient_type', User::class);
+            })
+            ->findOrFail($prescriptionId);
+
+        if ($prescription->status !== 'dispensed') {
+            return response()->json([
+                'message' => 'لا يمكن طلب تجديد وصفة لم تُصرف بعد',
+            ], 422);
+        }
+
+        $hasPendingRequest = PrescriptionRefillRequest::where('prescription_id', $prescription->id)
+            ->where('status', 'pending')
+            ->exists();
+
+        if ($hasPendingRequest) {
+            return response()->json([
+                'message' => 'يوجد بالفعل طلب تجديد قيد الانتظار لهذه الوصفة',
+            ], 422);
+        }
+
+        $refillRequest = PrescriptionRefillRequest::create([
+            'prescription_id' => $prescription->id,
+            'patient_id' => $user->id,
+            'doctor_id' => $prescription->appointment->doctor_id,
+            'status' => 'pending',
+            'patient_note' => $validated['note'] ?? null,
+        ]);
+
+        Notification::create([
+            'type' => 'refill_requested',
+            'title' => 'طلب تجديد وصفة طبية',
+            'body' => $user->name.' يطلب تجديد وصفة: '.($prescription->notes ?? 'وصفة طبية'),
+            'appointment_id' => $prescription->appointment_id,
+            'notifiable_id' => $prescription->appointment->doctor_id,
+            'notifiable_type' => User::class,
+        ]);
+
+        return response()->json([
+            'message' => 'تم إرسال طلب التجديد للطبيب بنجاح',
+            'data' => $refillRequest,
+        ], 201);
     }
 
     public function getBroadcasts()
