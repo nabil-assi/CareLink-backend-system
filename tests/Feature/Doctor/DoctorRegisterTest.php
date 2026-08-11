@@ -4,8 +4,9 @@ use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
-// DoctorAuthController::register ينشئ doctorProfile بدون gender،
-// لكن doctor_profiles.gender مطلوب NOT NULL في الـ migration — التسجيل يرجع 500.
+// DoctorAuthController::register كان ينشئ doctorProfile بدون gender رغم إنه
+// doctor_profiles.gender مطلوب NOT NULL بالـ migration - تم تصحيحه بجعل
+// gender وyears_of_experience إلزاميين بالتحقق (نفس حقول فورم التسجيل الحقيقي)
 it('يقدر الطبيب يسجل حساب جديد ببيانات صحيحة', function () {
     Storage::fake('public');
 
@@ -15,6 +16,8 @@ it('يقدر الطبيب يسجل حساب جديد ببيانات صحيحة',
         'password' => 'password123',
         'phone' => '0500000000',
         'specialty' => 'أمراض القلب',
+        'gender' => 'male',
+        'years_of_experience' => 5,
         'credential_document' => UploadedFile::fake()->create('credential.pdf', 100, 'application/pdf'),
     ], [
         'Accept' => 'application/json',
@@ -35,9 +38,11 @@ it('يقدر الطبيب يسجل حساب جديد ببيانات صحيحة',
     expect($user->doctorProfile)->not->toBeNull();
     expect($user->doctorProfile->specialty)->toBe('أمراض القلب');
     expect($user->doctorProfile->status)->toBe('inactive');
+    expect($user->doctorProfile->gender)->toBe('male');
+    expect($user->doctorProfile->years_of_experience)->toBe(5);
 
     Storage::disk('public')->assertExists($user->doctorProfile->credential_document);
-})->skip('DoctorAuthController::register لا يمرّر gender — NOT NULL constraint في doctor_profiles.gender');
+});
 
 it('يرفض التسجيل بإيميل مستخدم مسبقاً', function () {
     Storage::fake('public');

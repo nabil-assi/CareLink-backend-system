@@ -22,12 +22,15 @@ class DoctorAuthController extends Controller
             'specialty' => 'required|string',
             'credential_document' => 'required|file|mimes:pdf,jpg,png|max:2048',
             // كانت هاي كلها موجودة بفورم تسجيل الطبيب وبيرسلها الفرونت دايماً،
-            // بس ما كانت متحقق منها ولا بتنحفظ - بتضيع بصمت
+            // بس ما كانت متحقق منها ولا بتنحفظ - بتضيع بصمت. gender وyears_of_experience
+            // إلزاميين هون تحديداً (مش nullable) لأنه عمودي doctor_profiles.gender
+            // و doctor_profiles.years_of_experience أصلاً NOT NULL بقاعدة البيانات -
+            // لو تركناهم nullable وحد ما بعتهم كان رح يطلع خطأ 500 بدل رسالة تحقق واضحة
             'national_id' => 'nullable|string',
             'date_of_birth' => 'nullable|date',
             'address' => 'nullable|string|max:500',
-            'gender' => 'nullable|in:male,female',
-            'years_of_experience' => 'nullable|integer|min:0|max:60',
+            'gender' => 'required|in:male,female',
+            'years_of_experience' => 'required|integer|min:0|max:60',
         ]);
 
         return DB::transaction(function () use ($validated, $request) {
