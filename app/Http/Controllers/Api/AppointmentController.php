@@ -201,6 +201,45 @@ class AppointmentController extends Controller
         ], 200);
     }
 
+    // FR-06.3: يشوف الطبيب كل الوصفات يلي كتبها هو تحديداً - ما كان في أي
+    // مسار لهاد إطلاقاً، الطبيب بس بيكتب الوصفة (storePrescription) بدون
+    // ما يقدر يرجع يشوفها بعدين
+    public function doctorPrescriptions()
+    {
+        $doctorId = auth()->id();
+
+        $prescriptions = Prescription::whereHas('appointment', function ($query) use ($doctorId) {
+            $query->where('doctor_id', $doctorId);
+        })
+            ->with(['appointment.patient', 'medicines'])
+            ->latest()
+            ->get()
+            ->map(function ($rx) {
+                $patient = $rx->appointment?->patient;
+
+                $medicationsList = $rx->medicines->map(function ($med) {
+                    return "{$med->medicine_name} - الجرعة: {$med->dosage} - المدة: {$med->duration}";
+                })->implode("\n");
+
+                return [
+                    'id' => $rx->id,
+                    'appointmentId' => $rx->appointment_id,
+                    'patient' => $patient->full_name ?? $patient->name ?? 'مريض غير معروف',
+                    'diagnosis' => $rx->diagnosis,
+                    'medications' => $medicationsList ?: $rx->notes,
+                    'status' => $rx->status,
+                    'scheduledAt' => $rx->appointment?->scheduled_at,
+                    'createdAt' => $rx->created_at,
+                    'dispensedAt' => $rx->dispensed_at,
+                ];
+            });
+
+        return response()->json([
+            'message' => 'تم استرجاع الوصفات الطبية بنجاح',
+            'data' => $prescriptions,
+        ], 200);
+    }
+
     public function getAllMedicalRecords()
     {
         $doctorId = auth()->id();

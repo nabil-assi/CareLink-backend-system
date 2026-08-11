@@ -32,6 +32,7 @@ Route::middleware(['auth:sanctum', 'checkRole:doctor'])->prefix('doctor')->group
     Route::post('/appointments/{id}/complete', [AppointmentController::class, 'completeAppointment']);
 
     Route::get('/medical-records', [AppointmentController::class, 'getAllMedicalRecords']);
+    Route::get('/prescriptions', [AppointmentController::class, 'doctorPrescriptions']);
     // حفظ السجل الطبي مرتبطاً بالموعد
     Route::get('/patients', [AppointmentController::class, 'doctorPatients']);
     Route::get('/patients/{id}', [AppointmentController::class, 'doctorPatientDetail']);
