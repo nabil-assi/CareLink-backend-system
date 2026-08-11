@@ -170,7 +170,9 @@ public function myMedicalRecords(Request $request)
         // الفلتر كانت ممكن ترجع مواعيد مريض تاني إذا تطابق الـ id رقمياً بس
         $records = Appointment::where('patient_id', $user->id)
             ->where('patient_type', User::class)
-            ->with('doctor:id,name')
+            // prescription محتاجينها عشان الفرونت يعرف الحالة الحقيقية للوصفة
+            // (قيد الانتظار/جاهزة/تم الصرف) بدل ما يفترض إنها "صدرت" دايماً
+            ->with(['doctor:id,name', 'prescription'])
             ->latest()
             ->get();
 
