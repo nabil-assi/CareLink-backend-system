@@ -73,7 +73,9 @@ class RadiologyController extends Controller
 
     public function show($id)
 {
-    $order = ImagingOrder::with(['appointment.patient', 'doctor'])->find($id);
+    $order = ImagingOrder::where('doctor_id', auth()->id())
+        ->with(['appointment.patient', 'doctor'])
+        ->find($id);
 
     if (!$order) {
         return response()->json(['status' => false, 'message' => 'الطلب غير موجود'], 404);

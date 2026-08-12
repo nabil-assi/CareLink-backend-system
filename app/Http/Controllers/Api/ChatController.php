@@ -17,7 +17,13 @@ class ChatController extends Controller
         $userId = $request->user()->id;
 
         // تأكد إن المستخدم الحالي هو فعلاً طرف بهاي الموعد
-        if ($appointment->doctor_id !== $userId && $appointment->patient_id !== $userId) {
+        // ملاحظة: patient_id علاقة polymorphic (ممكن تشير لـ User أو لـ Patient
+        // "مريض استقبال" بدون حساب دخول)، فلازم نتأكد من patient_type كمان،
+        // لأنه جدولي users و patients عندهم IDs مستقلة وممكن تتطابق بالصدفة
+        $isDoctor = $appointment->doctor_id === $userId;
+        $isPatient = $appointment->patient_type === User::class && $appointment->patient_id === $userId;
+
+        if (! $isDoctor && ! $isPatient) {
             return response()->json(['message' => 'غير مصرح لك'], 403);
         }
 

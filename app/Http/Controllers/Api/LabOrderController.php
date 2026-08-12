@@ -71,7 +71,9 @@ class LabOrderController extends Controller
 
     public function show($id)
 {
-    $order = LabOrder::with(['appointment.patient', 'doctor'])->find($id);
+    $order = LabOrder::where('doctor_id', auth()->id())
+        ->with(['appointment.patient', 'doctor'])
+        ->find($id);
 
     if (!$order) {
         return response()->json(['status' => false, 'message' => 'الطلب غير موجود'], 404);
