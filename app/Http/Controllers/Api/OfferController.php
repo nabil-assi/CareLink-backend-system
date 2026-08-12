@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\NewsletterSubscriber;
 use Illuminate\Http\Request;
 
 class OfferController extends Controller
@@ -78,12 +79,17 @@ class OfferController extends Controller
         ], 200);
     }
 
-    // استقبال اشتراك النشرة البريدية
+    // استقبال اشتراك النشرة البريدية - كان بيتحقق من الإيميل بس ما بيحفظه
+    // بأي مكان، فأي اشتراك كان بيضيع رغم رسالة النجاح
     public function subscribe(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'email' => 'required|email|max:255',
         ]);
+
+        // firstOrCreate عشان اشتراك متكرر لنفس الإيميل ما يطلع خطأ unique
+        // constraint - بس يرجع نفس رسالة النجاح بهدوء
+        NewsletterSubscriber::firstOrCreate(['email' => $validated['email']]);
 
         return response()->json([
             'message' => 'تم الاشتراك بنجاح في النشرة البريدية.',

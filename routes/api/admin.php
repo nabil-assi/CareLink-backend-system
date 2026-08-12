@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\Api\Admin\AdController;
 use App\Http\Controllers\Api\Admin\ArticleController;
+use App\Http\Controllers\Api\Admin\ContactMessageController;
 use App\Http\Controllers\Api\Admin\FaqController;
+use App\Http\Controllers\Api\Admin\NewsletterSubscriberController;
 use App\Http\Controllers\Api\Admin\NotificationController;
 use App\Http\Controllers\Api\Admin\PostController;
 use App\Http\Controllers\Api\Admin\StaffController;
@@ -58,6 +60,13 @@ Route::middleware(['auth:sanctum', 'checkRole:admin'])->prefix('admin')->group(f
     Route::post('/testimonials', [TestimonialController::class, 'store']);
     Route::put('/testimonials/{id}', [TestimonialController::class, 'update']);
     Route::delete('/testimonials/{id}', [TestimonialController::class, 'destroy']);
+
+    Route::get('/contact-messages', [ContactMessageController::class, 'index']);
+    Route::patch('/contact-messages/{id}/read', [ContactMessageController::class, 'markAsRead']);
+    Route::delete('/contact-messages/{id}', [ContactMessageController::class, 'destroy']);
+
+    Route::get('/newsletter-subscribers', [NewsletterSubscriberController::class, 'index']);
+    Route::delete('/newsletter-subscribers/{id}', [NewsletterSubscriberController::class, 'destroy']);
 
     Route::get('/settings', [SettingController::class, 'index']);
     Route::post('/settings', [SettingController::class, 'update']);

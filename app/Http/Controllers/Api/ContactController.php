@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ContactMessage;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -24,6 +25,10 @@ class ContactController extends Controller
                 'errors'  => $validator->errors()
             ], 422);
         }
+
+        // كان النموذج بيتحقق من البيانات بس ما بيحفظها ولا بيرسلها لحدا -
+        // أي رسالة "تواصل معنا" كانت بتضيع نهائياً رغم رسالة النجاح
+        ContactMessage::create($validator->validated());
 
         return response()->json([
             'message' => 'تم إرسال رسالتك بنجاح. سنقوم بالرد عليك في أقرب وقت.'
