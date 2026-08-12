@@ -514,11 +514,13 @@ class AppointmentController extends Controller
         $doctorId = auth()->id();
 
         // patient() علاقة polymorphic بترجع User أو Patient حسب الموعد، وPatient
-        // (مريض الاستقبال) ما إله علاقة patientProfile أصلاً - عمل eager load
-        // لـ 'patient.patientProfile' كان بيكسر الصفحة (500) لأي طبيب عنده موعد
-        // واحد بس لمريض استقبال، لهيك بنجيبها بس لما يكون المريض User فعلاً
+        // (مريض الاستقبال) ما إله علاقة patientProfile أصلاً - morphWith بيعمل
+        // eager load لـ patientProfile بس لما يكون المريض User فعلاً، فبيتفادى
+        // الكراش يلي كان صايره لما كان عمل eager load عادي لـ 'patient.patientProfile'
         $patients = Appointment::where('doctor_id', $doctorId)
-            ->with('patient')
+            ->with(['patient' => function ($morphTo) {
+                $morphTo->morphWith([User::class => ['patientProfile']]);
+            }])
             ->get()
             ->pluck('patient')
             ->filter()

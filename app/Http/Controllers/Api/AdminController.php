@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rules\Password;
 
 class AdminController extends Controller
 {
@@ -132,7 +133,7 @@ class AdminController extends Controller
 
         // حذف ملفات الشهادات من الـ profile إذا كانت موجودة
         if ($doctor->doctorProfile && $doctor->doctorProfile->credential_document) {
-            Storage::delete($doctor->doctorProfile->credential_document);
+            Storage::disk('public')->delete($doctor->doctorProfile->credential_document);
         }
 
         $doctor->delete();
@@ -231,7 +232,6 @@ class AdminController extends Controller
             'email' => 'required|email|unique:users,email,'.$user->id,
             'phone' => 'required|string|max:20',
             'national_id' => 'required|string|max:20',
-            'role' => 'required|string',
         ]);
 
         $user->update($validated);

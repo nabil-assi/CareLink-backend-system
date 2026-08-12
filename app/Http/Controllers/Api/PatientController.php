@@ -300,18 +300,26 @@ public function myMedicalRecords(Request $request)
         }
     }
 
-    public function storeRating(Request $request, $doctorId)
+    public function storeRating(Request $request, $appointmentId)
     {
         $request->validate([
             'rating' => 'required|integer|min:1|max:5',
             'comment' => 'nullable|string|max:500',
-            'appointment_id' => 'required|exists:appointments,id',
         ]);
 
-        // التحقق هل تم تقييم هذا الموعد مسبقاً
-        $exists = DoctorRating::where('patient_id', $request->user()->id)
-            ->where('appointment_id', $request->appointment_id)
-            ->exists();
+        $appointment = Appointment::where('id', $appointmentId)
+            ->where('patient_type', User::class)
+            ->where('patient_id', $request->user()->id)
+            ->firstOrFail();
+
+        if ($appointment->status !== 'completed') {
+            return response()->json([
+                'status' => false,
+                'message' => 'لا يمكن تقييم موعد غير منتهي',
+            ], 422);
+        }
+
+        $exists = DoctorRating::where('appointment_id', $appointment->id)->exists();
 
         if ($exists) {
             return response()->json([
@@ -320,17 +328,13 @@ public function myMedicalRecords(Request $request)
             ], 422);
         }
 
-        $rating = DoctorRating::updateOrCreate(
-            [
-                'patient_id' => $request->user()->id,
-                'doctor_id' => $doctorId,
-                'appointment_id' => $request->appointment_id,
-            ],
-            [
-                'rating' => $request->rating,
-                'comment' => $request->comment,
-            ]
-        );
+        $rating = DoctorRating::create([
+            'patient_id' => $request->user()->id,
+            'doctor_id' => $appointment->doctor_id,
+            'appointment_id' => $appointment->id,
+            'rating' => $request->rating,
+            'comment' => $request->comment,
+        ]);
 
         return response()->json([
             'status' => true,
