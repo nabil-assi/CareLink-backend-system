@@ -45,8 +45,15 @@ class LandingController extends Controller
     public function getDoctors()
     {
         try {
+            // كانت orWhereNotNull('specialty') بدون قوس، فبتصير OR على مستوى
+            // الاستعلام كله - بترجع أي مستخدم عنده specialty (صيدلي/فني مختبر
+            // إلخ) حتى لو مش دوره doctor إطلاقاً
             $doctors = User::where('role', 'doctor')
-                ->orWhereNotNull('specialty')
+                // status بجدول users رقم (مفعّل الحساب أو لا) مش نفسه حالة
+                // اعتماد الطبيب - الفرونت بيفلتر على status نصي "active"،
+                // فلازم ناخده من doctorProfile.status الحقيقي وإلا كل الأطباء
+                // بينفلتروا برا الصفحة الرئيسية رغم إنه الـ API شغال
+                ->with('doctorProfile:user_id,status')
                 ->select('id', 'name', 'email', 'phone', 'specialty', 'profile_picture', 'status')
                 ->get()
                 // average_rating accessor موجود بالموديل بس مش appended تلقائياً
