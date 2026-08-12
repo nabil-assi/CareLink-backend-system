@@ -35,6 +35,18 @@ class GoogleAuthController extends Controller
                 'status' => true,
                 'national_id' => 'google_'.$googleUser->getId(),
             ]);
+        } else {
+            // حساب موجود مسبقاً بنفس الإيميل - لازم نطبّق نفس فحوصات
+            // التعليق/الموافقة يلي كل بوابات الدخول التانية (staff/doctor) بتعملها،
+            // وإلا طبيب موقوف عن العمل أو لسا بانتظار موافقة الإدارة، أو موظف
+            // موقوف، كان يقدر يتجاوزها كلها بمجرد الدخول بـ Google
+            if ($user->role === 'doctor') {
+                if (! $user->doctorProfile || $user->doctorProfile->status !== 'active') {
+                    return redirect($this->frontendErrorUrl('حسابك بانتظار موافقة الإدارة'));
+                }
+            } elseif (! $user->status) {
+                return redirect($this->frontendErrorUrl('هذا الحساب موقوف من قبل الإدارة.'));
+            }
         }
 
         $token = $user->createToken('google-token')->plainTextToken;
@@ -52,5 +64,13 @@ class GoogleAuthController extends Controller
         ]);
 
         return redirect("{$frontendUrl}/auth/google/callback?{$query}");
+    }
+
+    private function frontendErrorUrl(string $message): string
+    {
+        $frontendUrl = rtrim(env('FRONTEND_URL', 'http://localhost:5173'), '/');
+        $query = http_build_query(['error' => $message]);
+
+        return "{$frontendUrl}/auth/google/callback?{$query}";
     }
 }
