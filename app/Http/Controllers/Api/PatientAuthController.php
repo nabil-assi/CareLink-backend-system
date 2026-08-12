@@ -107,7 +107,14 @@ class PatientAuthController extends Controller
         $otp = random_int(10000, 99999);
         Cache::put('otp_patient_'.$user->email, $otp, now()->addMinutes(10));
 
-        NotificationService::send('password_reset', $user, ['otp' => $otp]);
+        // هون بالذات لازم نتحقق من نجاح الإرسال (عكس approveDoctor مثلاً) -
+        // الإجراء كله معناه "استلم رمز عبر الإيميل"، فلو فشل الإرسال فعلياً
+        // ورجعنا رسالة نجاح، المستخدم رح يضل يستنى رمز ما رح يوصله أبداً
+        if (! NotificationService::send('password_reset', $user, ['otp' => $otp])) {
+            return response()->json([
+                'message' => 'تعذر إرسال رمز التحقق حالياً، حاول مرة أخرى بعد قليل',
+            ], 503);
+        }
 
         return response()->json(['message' => 'تم إرسال رمز التحقق إلى بريدك الإلكتروني']);
     }

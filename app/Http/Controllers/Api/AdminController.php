@@ -177,10 +177,18 @@ class AdminController extends Controller
 
         $doctor = User::where('role', 'doctor')->findOrFail($id);
 
-        Mail::raw($validated['message'], function ($mail) use ($doctor, $validated) {
-            $mail->to($doctor->email)
-                ->subject($validated['subject'] ?: 'CareLink — إشعار من الإدارة');
-        });
+        // هاد الإجراء كله معناه "أرسل إيميل" فلازم نتحقق من نجاحه فعلياً -
+        // مش زي approveDoctor يلي الإيميل فيه إشعار ثانوي عن إجراء خلص أصلاً
+        try {
+            Mail::raw($validated['message'], function ($mail) use ($doctor, $validated) {
+                $mail->to($doctor->email)
+                    ->subject($validated['subject'] ?: 'CareLink — إشعار من الإدارة');
+            });
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'تعذر إرسال البريد حالياً، حاول مرة أخرى بعد قليل',
+            ], 503);
+        }
 
         return response()->json([
             'message' => 'تم إرسال البريد إلى '.$doctor->email.' بنجاح',
