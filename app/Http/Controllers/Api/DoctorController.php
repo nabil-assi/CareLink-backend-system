@@ -201,14 +201,21 @@ class DoctorController extends Controller
         ->latest()
         ->take(5)
         ->get()
-        ->map(fn ($order) => [
-            'id' => $order->id,
-            'appointmentId' => $order->appointment_id,
-            'patientId' => $order->resolvePatient()?->id,
-            'patientName' => $order->resolvePatient()->full_name ?? $order->resolvePatient()->name ?? 'مريض',
-            'tests' => $order->tests,
-            'hasCritical' => false,
-        ]);
+        ->map(function ($order) {
+            // resolvePatient() كان ينادى 3 مرات، وثاني مرة بدون null-safe -
+            // لو موعد الطلب محذوف أو ما فيه مريض قابل للحل كان بيطيح الـ
+            // endpoint كله بـ 500 بدل ما يرجع "مريض" افتراضياً
+            $patient = $order->resolvePatient();
+
+            return [
+                'id' => $order->id,
+                'appointmentId' => $order->appointment_id,
+                'patientId' => $patient?->id,
+                'patientName' => $patient->full_name ?? $patient->name ?? 'مريض',
+                'tests' => $order->tests,
+                'hasCritical' => false,
+            ];
+        });
 
     $imaging = ImagingOrder::where('doctor_id', $doctorId)
         ->where('status', 'completed')
@@ -216,13 +223,17 @@ class DoctorController extends Controller
         ->latest()
         ->take(5)
         ->get()
-        ->map(fn ($order) => [
-            'id' => $order->id,
-            'appointmentId' => $order->appointment_id,
-            'patientId' => $order->resolvePatient()?->id,
-            'patientName' => $order->resolvePatient()->full_name ?? $order->resolvePatient()->name ?? 'مريض',
-            'studies' => $order->studies,
-        ]);
+        ->map(function ($order) {
+            $patient = $order->resolvePatient();
+
+            return [
+                'id' => $order->id,
+                'appointmentId' => $order->appointment_id,
+                'patientId' => $patient?->id,
+                'patientName' => $patient->full_name ?? $patient->name ?? 'مريض',
+                'studies' => $order->studies,
+            ];
+        });
 
     return response()->json([
         'message' => 'تم استرجاع بيانات الصفحة الرئيسية بنجاح',
