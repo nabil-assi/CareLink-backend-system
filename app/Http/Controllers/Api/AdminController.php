@@ -31,12 +31,16 @@ class AdminController extends Controller
             'specialty' => 'required|string|max:255',
             'years_of_experience' => 'required|integer|min:0|max:60',
             'credential_document' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'profile_picture' => 'required|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
         $credentialPath = $request->file('credential_document')->store('documents', 'public');
+        // نفس عمود/مسار DoctorController::updateProfilePicture - LandingController
+        // بيقرأ الصورة من users.profile_picture مباشرة، مش من doctor_profiles
+        $profilePicturePath = $request->file('profile_picture')->store('profile_pictures', 'public');
 
         // استخدام Transaction لضمان عدم إنشاء مستخدم بدون بروفايل في حال حدوث خطأ
-        return DB::transaction(function () use ($validated, $credentialPath) {
+        return DB::transaction(function () use ($validated, $credentialPath, $profilePicturePath) {
 
             // 2. إنشاء المستخدم الأساسي
             $user = User::create([
@@ -46,6 +50,7 @@ class AdminController extends Controller
                 'phone' => $validated['phone'],
                 'national_id' => $validated['national_id'],
                 'role' => 'doctor',
+                'profile_picture' => $profilePicturePath,
             ]);
 
             // 3. إنشاء البروفايل الخاص بالطبيب بحالة Active فوراً
