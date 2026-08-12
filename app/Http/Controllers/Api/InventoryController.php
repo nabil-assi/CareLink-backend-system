@@ -47,8 +47,9 @@ class InventoryController extends Controller
     public function store(StoreInventoryRequest $request): JsonResponse
     {
         $data = $request->validated();
+        $actorName = $request->user()->name;
 
-        $item = DB::transaction(function () use ($data) {
+        $item = DB::transaction(function () use ($data, $actorName) {
             $item = Inventory::create([
                 'name' => $data['name'],
                 'category' => $data['category'],
@@ -57,7 +58,7 @@ class InventoryController extends Controller
                 'min_quantity' => $data['min_quantity'],
                 'price' => $data['price'],
                 'keywords' => $data['keywords'] ?? [],
-                'updated_by' => $data['actor_name'] ?? null,
+                'updated_by' => $actorName,
             ]);
 
             $item->batches()->create([
@@ -72,7 +73,7 @@ class InventoryController extends Controller
                 'item_name' => $item->name,
                 'type' => 'create',
                 'delta' => $data['quantity'],
-                'actor_name' => $data['actor_name'] ?? null,
+                'actor_name' => $actorName,
                 'notes' => $data['notes'] ?? 'إضافة دواء جديد',
             ]);
 
@@ -92,8 +93,9 @@ class InventoryController extends Controller
     public function update(UpdateInventoryRequest $request, Inventory $inventory): InventoryResource
     {
         $data = $request->validated();
+        $actorName = $request->user()->name;
 
-        DB::transaction(function () use ($data, $inventory) {
+        DB::transaction(function () use ($data, $inventory, $actorName) {
             $inventory->fill([
                 'name' => $data['name'],
                 'category' => $data['category'],
@@ -102,7 +104,7 @@ class InventoryController extends Controller
                 'min_quantity' => $data['min_quantity'],
                 'price' => $data['price'],
                 'keywords' => $data['keywords'] ?? [],
-                'updated_by' => $data['actor_name'] ?? $inventory->updated_by,
+                'updated_by' => $actorName,
             ])->save();
 
             if (array_key_exists('batches', $data)) {
@@ -130,7 +132,7 @@ class InventoryController extends Controller
                 'item_name' => $inventory->name,
                 'type' => array_key_exists('batches', $data) ? 'batches_update' : 'update',
                 'delta' => 0,
-                'actor_name' => $data['actor_name'] ?? null,
+                'actor_name' => $actorName,
                 'notes' => $data['notes'] ?? (array_key_exists('batches', $data)
                     ? 'تحديث بيانات الدفعات'
                     : 'تعديل بيانات الدواء'),
@@ -186,7 +188,7 @@ class InventoryController extends Controller
                 'item_name' => $inventory->name,
                 'type' => 'delete',
                 'delta' => -$inventory->quantity,
-                'actor_name' => $request->input('actor_name'),
+                'actor_name' => $request->user()->name,
                 'notes' => $request->input('notes', 'حذف نهائي من قائمة الأدوية'),
             ]);
 
@@ -245,7 +247,7 @@ class InventoryController extends Controller
                 'item_name' => $inventory->name,
                 'type' => $request->input('type', $delta > 0 ? 'restock' : 'adjust'),
                 'delta' => $delta,
-                'actor_name' => $request->input('actor_name'),
+                'actor_name' => $request->user()->name,
                 'notes' => $request->input('notes', "تعديل سريع بمقدار " . ($delta > 0 ? "+{$delta}" : $delta)),
             ]);
         });
