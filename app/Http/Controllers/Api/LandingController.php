@@ -48,6 +48,11 @@ class LandingController extends Controller
             // كانت orWhereNotNull('specialty') بدون قوس، فبتصير OR على مستوى
             // الاستعلام كله - بترجع أي مستخدم عنده specialty (صيدلي/فني مختبر
             // إلخ) حتى لو مش دوره doctor إطلاقاً
+            // كانت average_rating (اللي هي أصلاً بتستعلم مرتين جوا الـ accessor)
+            // و ratings()->count() بينفذوا 3 استعلامات منفصلة *لكل طبيب* داخل
+            // map() - يعني N×3 رحلة لقاعدة بيانات بعيدة (TiDB Cloud)، وهاد
+            // كان يوصل لأكتر من 8-9 ثواني حتى مع طبيبين تلاتة. withAvg/withCount
+            // بيحسبوا الاثنين بستعلام واحد مجمّع بدل ما نلف على كل طبيب لحاله
             $doctors = User::where('role', 'doctor')
                 // status بجدول users رقم (مفعّل الحساب أو لا) مش نفسه حالة
                 // اعتماد الطبيب - الفرونت بيفلتر على status نصي "active"،
@@ -55,12 +60,18 @@ class LandingController extends Controller
                 // بينفلتروا برا الصفحة الرئيسية رغم إنه الـ API شغال
                 ->with('doctorProfile:user_id,status')
                 ->select('id', 'name', 'email', 'phone', 'specialty', 'profile_picture', 'status')
+                // withAvg/withCount لازم يجوا بعد select() مباشرة - قبلها كانوا
+                // بيلفوا ("addSelect" داخلياً)، فلو select() جاي بعدهم بيمسح
+                // أعمدتهم بالكامل ويرجعوا null
+                ->withAvg('ratings', 'rating')
+                ->withCount('ratings')
                 ->get()
-                // average_rating accessor موجود بالموديل بس مش appended تلقائياً
-                // بالـ JSON، فبنضيفه يدوياً هون عشان يوصل للفرونت
                 ->map(function ($doctor) {
-                    $doctor->average_rating = $doctor->average_rating;
-                    $doctor->reviews_count = $doctor->ratings()->count();
+                    $doctor->average_rating = $doctor->ratings_avg_rating
+                        ? number_format($doctor->ratings_avg_rating, 1)
+                        : 0;
+                    $doctor->reviews_count = $doctor->ratings_count;
+                    unset($doctor->ratings_avg_rating, $doctor->ratings_count);
 
                     return $doctor;
                 });
