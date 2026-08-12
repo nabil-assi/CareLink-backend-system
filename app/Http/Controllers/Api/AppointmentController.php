@@ -404,6 +404,11 @@ class AppointmentController extends Controller
             'notes' => 'nullable|string',
         ]);
 
+        // كان ينحفظ appointment_id مباشرة بدون التأكد إنه الموعد موجود أصلاً
+        // ولا إنه تبع نفس الطبيب المسجل دخوله - أي طبيب فيه يضيف طلب تحاليل
+        // على موعد طبيب تاني بس يخمن الـ id
+        Appointment::where('id', $id)->where('doctor_id', auth()->id())->firstOrFail();
+
         // المريض هلق بينجلب من الموعد نفسه (appointment->patient) مش من الـ request -
         // appointment_id صار عمود حقيقي بجدول lab_orders ويدعم مريض الاستقبال والحساب الذاتي سوا
         $labOrder = LabOrder::create([
@@ -433,6 +438,9 @@ class AppointmentController extends Controller
             'priority' => 'nullable|string',
             'notes' => 'nullable|string',
         ]);
+
+        // نفس تصحيح storeLabOrder - تحقق ملكية الموعد قبل الإنشاء
+        Appointment::where('id', $id)->where('doctor_id', auth()->id())->firstOrFail();
 
         $imagingOrder = ImagingOrder::create([
             'appointment_id' => $id,
