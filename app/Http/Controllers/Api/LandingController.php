@@ -46,8 +46,12 @@ class LandingController extends Controller
     {
         try {
            
+            // status هون (users.status) هو علم الإيقاف من الإدارة - منفصل عن
+            // doctorProfile.status (حالة الموافقة). الفرونت كان بيفلتر بس على
+            // doctorProfile.status، فطبيب موقوف (status=false) بس معتمد أصلاً
+            // كان يضل ظاهر وقابل للحجز بالصفحة الرئيسية العامة حتى بعد إيقافه
             $doctors = User::where('role', 'doctor')
-           
+                ->where('status', true)
                 ->with('doctorProfile:user_id,status')
                 ->select('id', 'name', 'email', 'phone', 'specialty', 'profile_picture', 'status')
                 ->withAvg('ratings', 'rating')
