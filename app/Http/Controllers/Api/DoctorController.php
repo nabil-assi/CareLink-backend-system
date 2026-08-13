@@ -93,22 +93,30 @@ class DoctorController extends Controller
         ]);
 
         // 2. تحديث جدول المستخدم (users)
+        // national_id هون كمان (مش بس بـ doctor_profiles) عشان الاثنين ما
+        // يضلوا يتعارضوا مع بعض - كان قبل بس doctor_profiles.national_id
+        // يتحدث فتصير قيمتين مختلفتين لنفس الطبيب بجدولين مختلفين
         $user->update([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'phone' => $validated['phone'] ?? $user->phone,
+            'national_id' => $validated['national_id'] ?? $user->national_id,
         ]);
 
         // 3. تحديث جدول بروفايل الطبيب (doctor_profiles)
-        // نستخدم null coalescing (??) لضمان عدم إرسال null للقاعدة إذا لم تكن القيمة موجودة
+        // نحافظ على القيمة القديمة لو الحقل ما انبعت بدل ما نفرض default معيّن
+        // (كان gender الغير مرسل بيترجم "male" افتراضياً حتى لو الطبيب فعلياً
+        // مسجل "female" - ممكن يمسح بيانات صحيحة لو أي عميل تاني نادى الـ API
+        // بدون كل الحقول)
+        $existingProfile = $user->doctorProfile;
         $user->doctorProfile()->updateOrCreate(
             ['user_id' => $user->id],
             [
-                'date_of_birth' => $validated['date_of_birth'] ?? null,
-                'address' => $validated['address'] ?? null,
-                'gender' => $validated['gender'] ?? 'male',
-                'specialty' => $validated['specialty'] ?? 'غير محدد', // حل جذري لمشكلة الـ Null
-                'national_id' => $validated['national_id'] ?? null,
+                'date_of_birth' => $validated['date_of_birth'] ?? $existingProfile?->date_of_birth,
+                'address' => $validated['address'] ?? $existingProfile?->address,
+                'gender' => $validated['gender'] ?? $existingProfile?->gender ?? 'male',
+                'specialty' => $validated['specialty'] ?? $existingProfile?->specialty ?? 'غير محدد',
+                'national_id' => $validated['national_id'] ?? $existingProfile?->national_id,
             ]
         );
 

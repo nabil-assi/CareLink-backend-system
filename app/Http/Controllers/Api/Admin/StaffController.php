@@ -132,13 +132,16 @@ class StaffController extends Controller
         }
 
         // 1. تحديث بيانات جدول users
+        // phone/department/specialty نخليهم يحافظوا على القيمة القديمة لو
+        // ما انبعتوا بالطلب، بدل ما ننسخهم لـ null (نفس باق DoctorController
+        // /PatientController يلي انصلح قبل شوي)
         $userUpdate = [
             'name' => $validated['name'],
             'email' => $validated['email'],
             'national_id' => $validated['national_id'],
-            'phone' => $validated['phone'] ?? null,
-            'department' => $validated['department'] ?? null,
-            'specialty' => $validated['specialty'] ?? null,
+            'phone' => $validated['phone'] ?? $user->phone,
+            'department' => $validated['department'] ?? $user->department,
+            'specialty' => $validated['specialty'] ?? $user->specialty,
         ];
         if (! empty($validated['password'])) {
             $userUpdate['password'] = Hash::make($validated['password']);
