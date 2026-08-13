@@ -42,6 +42,7 @@ class PatientAuthController extends Controller
                 'address' => $validated['address'] ?? null,
                 'gender' => $validated['gender'] ?? null,
                 'role' => 'patient',
+                'status' => true,
             ]);
 
             // 2. إنشاء البروفايل الطبي المرتبط
