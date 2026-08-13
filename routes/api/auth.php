@@ -46,4 +46,5 @@ Route::middleware(['auth:sanctum', 'checkRole:admin'])->prefix('auth')->group(fu
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/staff/change-password', [StaffAuthController::class, 'changePassword']);
     Route::post('/auth/change-password', [StaffAuthController::class, 'changePassword']);
+    Route::post('/auth/logout', [StaffAuthController::class, 'logout']);
 });
