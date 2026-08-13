@@ -120,7 +120,7 @@
 - **PHP** >= 8.3
 - **Composer** >= 2.0
 - **Node.js** >= 20 (لـ Vite/Frontend assets)
-- **Database**: SQLite (default) / MySQL / PostgreSQL
+- **Database**: MySQL 
 - **Redis** (اختياري — للـ Cache و Queue)
 
 ### الحزم الرئيسية
@@ -197,8 +197,8 @@ composer run dev
 APP_NAME=CareLink
 APP_URL=http://localhost
 
-# Database (SQLite افتراضي)
-DB_CONNECTION=sqlite
+# Database (Mysql افتراضي)
+DB_CONNECTION=mysql
 
 # Queue & Cache
 QUEUE_CONNECTION=database
