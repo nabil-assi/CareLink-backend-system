@@ -259,4 +259,6 @@ class AdminController extends Controller
 
         return response()->json(['message' => 'تم تحديث كلمة المرور بنجاح']);
     }
+
+
 }

@@ -2,13 +2,14 @@
 
 use App\Http\Controllers\Api\Admin\AdController;
 use App\Http\Controllers\Api\Admin\ArticleController;
+use App\Http\Controllers\Api\Admin\BackupController;
 use App\Http\Controllers\Api\Admin\ContactMessageController;
 use App\Http\Controllers\Api\Admin\FaqController;
 use App\Http\Controllers\Api\Admin\NewsletterSubscriberController;
 use App\Http\Controllers\Api\Admin\NotificationController;
 use App\Http\Controllers\Api\Admin\PostController;
-use App\Http\Controllers\Api\Admin\StaffController;
 use App\Http\Controllers\Api\Admin\SettingController;
+use App\Http\Controllers\Api\Admin\StaffController;
 use App\Http\Controllers\Api\Admin\TestimonialController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\DoctorController;
@@ -18,15 +19,13 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum', 'checkRole:admin'])->prefix('admin')->group(function () {
 
- 
-
     Route::get('/doctors', [DoctorController::class, 'index']);
     Route::post('/doctors', [AdminController::class, 'store']);
 
     Route::get('/pending-doctors', [AdminController::class, 'showPending']);
     Route::patch('/approve-doctor/{id}', [AdminController::class, 'approveDoctor']);
-        Route::put('/suspend-doctor/{id}', [AdminController::class, 'suspendDoctor']);
-        Route::put('/activate-doctor/{id}', [AdminController::class, 'activateDoctor']);
+    Route::put('/suspend-doctor/{id}', [AdminController::class, 'suspendDoctor']);
+    Route::put('/activate-doctor/{id}', [AdminController::class, 'activateDoctor']);
 
     Route::delete('/reject-doctor/{id}', [AdminController::class, 'rejectDoctor']);
     Route::post('/doctors/{id}/email', [AdminController::class, 'sendEmailToDoctor']);
@@ -86,5 +85,19 @@ Route::middleware(['auth:sanctum', 'checkRole:admin'])->prefix('admin')->group(f
     Route::put('/staff/{id}', [StaffController::class, 'update']);
     Route::patch('/staff/{id}/status', [StaffController::class, 'updateStatus']);
     Route::delete('/staff/{id}', [StaffController::class, 'destroy']);
+    
+    
+   
 
+});
+ 
+
+    Route::middleware(['auth:sanctum', 'checkRole:admin'])->prefix('admin/backups')->group(function () {
+    Route::get('/', [BackupController::class, 'index']);
+    Route::post('/', [BackupController::class, 'runManual']);              // بدل /run
+    Route::post('/{id}/restore', [BackupController::class, 'restore']);    // جديد
+    Route::get('/{id}/download', [BackupController::class, 'download']);
+    Route::delete('/{id}', [BackupController::class, 'destroy']);
+    Route::get('/settings', [BackupController::class, 'getSettings']);
+    Route::patch('/settings', [BackupController::class, 'updateSettings']);
 });
