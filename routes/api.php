@@ -24,7 +24,6 @@ use App\Http\Controllers\Api\PharmacyController;
 use App\Http\Controllers\Api\ProfileController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Artisan;
-use App\Http\Controllers\Auth\GoogleAuthController;
 
 Route::get('/articles', [LandingController::class, 'getPublishedArticles']);
 Route::get('/articles/{slug}', [LandingController::class, 'showArticles']);
@@ -119,8 +118,11 @@ Route::middleware('auth:sanctum')->group(function () {
 });
  
 
-Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle']);
-Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback']);
+// كان في نسختين من تسجيل الدخول بـ Google شغالتين بنفس الوقت - هاي كانت نسخة
+// قديمة/مهجورة (namespace Auth مش Api)، بترجّع لصفحة فرونت /auth/callback
+// غير موجودة أصلاً بالموقع، وما فيها أي فحص لحظر/تعليق الحساب زي النسخة
+// الحقيقية (routes/api/auth.php -> Api\GoogleAuthController). حذفناها نهائياً
+// بدل ما نصلحها مرتين - كل تسجيل الدخول بـ Google هلق يمر بنسخة واحدة بس.
 
 
 /**

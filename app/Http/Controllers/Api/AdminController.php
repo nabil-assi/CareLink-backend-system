@@ -51,6 +51,7 @@ class AdminController extends Controller
                 'national_id' => $validated['national_id'],
                 'role' => 'doctor',
                 'profile_picture' => $profilePicturePath,
+                'status' => true,
             ]);
 
             // 3. إنشاء البروفايل الخاص بالطبيب بحالة Active فوراً
@@ -167,7 +168,7 @@ class AdminController extends Controller
 
         $doctor->update(['status' => true]);
 
-        NotificationService::send('doctor_suspended', $doctor, ['name' => $doctor->name]);
+        NotificationService::send('doctor_activated', $doctor, ['name' => $doctor->name]);
 
         return response()->json([
             'message' => 'تم تفعيل حساب الطبيب '.$doctor->name.' بنجاح',

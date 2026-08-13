@@ -44,6 +44,10 @@ class DoctorAuthController extends Controller
                 'phone' => $validated['phone'],
                 'national_id' => $validated['national_id'] ?? null,
                 'role' => 'doctor',
+                // status هون معناه "الحساب مش موقوف" (تعليق/إيقاف من الإدارة لاحقاً)،
+                // مش موافقة الإدارة - هاي منفصلة وبتنحفظ بـ doctorProfile.status
+                // ('inactive' تحت، وما بيصير 'active' غير لما approveDoctor تشتغل)
+                'status' => true,
             ]);
 
             // 2. إنشاء البروفايل الخاص بالطبيب بحالة inactive
