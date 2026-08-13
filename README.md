@@ -1,58 +1,460 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+<div align="center">
+
+# 🏥 CareLink Backend System
+
+[![Laravel](https://img.shields.io/badge/Laravel-13.x-FF2D20?logo=laravel&logoColor=white)](https://laravel.com)
+[![PHP](https://img.shields.io/badge/PHP-8.3-777BB4?logo=php&logoColor=white)](https://php.net)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+**نظام إدارة العيادات الطبية المتكامل — Backend API**
 
 <p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+  <img src="https://img.shields.io/badge/API-RESTful-0096FF" />
+  <img src="https://img.shields.io/badge/Auth-Sanctum%20%2B%20OAuth2-FF6B6B" />
+  <img src="https://img.shields.io/badge/Real--Time-Reverb-4ECDC4" />
+  <img src="https://img.shields.io/badge/Queue-Database-45B7D1" />
 </p>
 
-## About Laravel
+</div>
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 📋 فهرس المحتويات
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- [نظرة عامة](#-نظرة-عامة)
+- [المميزات الرئيسية](#-المميزات-الرئيسية)
+- [هيكل النظام والأدوار](#-هيكل-النظام-والأدوار)
+- [الموديلات والكيانات](#-الموديلات-والكيانات)
+- [المتطلبات](#-المتطلبات)
+- [التثبيت والإعداد](#-التثبيت-والإعداد)
+- [البيئة والإعدادات](#-البيئة-والإعدادات)
+- [الـ API Endpoints](#-api-endpoints)
+- [الأمان والصلاحيات](#-الأمان-والصلاحيات)
+- [الاختبارات](#-الاختبارات)
+- [هيكل المشروع](#-هيكل-المشروع)
+- [الترخيص](#-الترخيص)
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## 🔭 نظرة عامة
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+**CareLink** هو نظام backend متكامل لإدارة العيادات الطبية، مبني باستخدام **Laravel 13** و **PHP 8.3**. يوفر واجهة برمجة تطبيقات RESTful API كاملة لإدارة جميع جوانب العيادة من المواعيد والسجلات الطبية إلى المخزون والمختبر والأشعة.
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+### 🎯 ما يميز النظام
+- **تعدد الأدوار**: 8 أدوار مختلفة (Admin, Doctor, Patient, Reception, Lab, Pharmacy, Radiology, Inventory Manager)
+- **التواصل الفوري**: نظام محادثات مدمج بين الطبيب والمريض
+- **الإشعارات الذكية**: إشعارات فورية للمواعيد والنتائج والوصفات الطبية
+- **إدارة المخزون**: تتبع كامل للأدوية والمستلزمات الطبية
+- **تسجيل الدخول الاجتماعي**: دعم Google OAuth 2.0
+- **حماية متقدمة**: مصادقة Sanctum + تحكم دقيق بالصلاحيات (RBAC)
 
-## Agentic Development
+---
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## ✨ المميزات الرئيسية
 
-```bash
-composer require laravel/boost --dev
+| الموديول | الوصف |
+|----------|-------|
+| 👤 **إدارة المستخدمين** | تسجيل/دخول/استعادة كلمة المرور لجميع الأدوار |
+| 📅 **المواعيد** | حجز، إلغاء، تأكيد، وإدارة المواعيد الطبية |
+| 📋 **السجلات الطبية** | إنشاء وعرض السجلات الطبية والتشخيصات |
+| 💬 **المحادثات** | دردشة فورية بين الطبيب والمريض مرتبطة بالموعد |
+| 🔔 **الإشعارات** | نظام إشعارات داخلي + بث عام (Broadcasts) |
+| 🧪 **المختبر** | طلبات تحاليل مع تتبع الحالة (Pending → In Progress → Completed) |
+| 🩻 **الأشعة** | طلبات أشعة مع إرفاق النتائج والصور |
+| 💊 **الصيدلية** | إدارة الوصفات الطبية والأدوية |
+| 📦 **المخزون** | إدارة الأصناف، الدفعات، والعمليات (Stock In/Out/Adjustment) |
+| 🏠 **الاستقبال** | تسجيل المرضى، تسجيل الوصول (Check-in)، تسليم الشift |
+| 📝 **المحتوى** | مقالات طبية، FAQs، شهادات المرضى (Testimonials) |
+| 📊 **لوحة التحكم** | إحصائيات وإدارة كاملة للأدمن |
 
-php artisan boost:install
+---
+
+## 👥 هيكل النظام والأدوار
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      CareLink System                        │
+├─────────────────────────────────────────────────────────────┤
+│  🔴 Admin          │  إدارة النظام، الموظفين، المحتوى     │
+│  👨‍⚕️ Doctor         │  المواعيد، السجلات الطبية، الوصفات   │
+│  🧑 Patient        │  الحجز، السجلات، المحادثات           │
+│  🏥 Reception      │  تسجيل المرضى، الاستقبال، الشيفتات   │
+│  🧪 Lab            │  طلبات التحاليل ونتائجها             │
+│  💊 Pharmacy       │  الوصفات والأدوية                    │
+│  🩻 Radiology      │  طلبات الأشعة ونتائجها               │
+│  📦 Inventory      │  إدارة المخزون والكميات              │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+---
 
-## Contributing
+## 🗄️ الموديلات والكيانات
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### الكيانات الرئيسية (28 Model)
 
-## Code of Conduct
+| الكيان | الوظيفة |
+|--------|---------|
+| `User` | المستخدم الأساسي مع Role-based access |
+| `Patient` / `PatientProfile` | بيانات المريض والملف الطبي |
+| `DoctorProfile` | بيانات الطبيب والتخصص والتقييم |
+| `ReceptionistProfile` | بيانات موظف الاستقبال |
+| `LabProfile` | بيانات فني المختبر |
+| `Appointment` | المواعيد الطبية مع حالات متعددة |
+| `MedicalRecord` | السجلات الطبية والتشخيص |
+| `Prescription` / `PrescriptionMedicine` | الوصفات الطبية والأدوية |
+| `LabOrder` | طلبات التحاليل المخبرية |
+| `ImagingOrder` | طلبات الأشعة |
+| `Conversation` / `Message` | المحادثات والرسائل |
+| `Notification` / `Broadcast` | الإشعارات والبث العام |
+| `Inventory` / `InventoryBatch` / `InventoryOperation` | المخزون والدفعات والعمليات |
+| `ShiftHandover` | تسليم الشيفتات بين الاستقبال |
+| `Article` / `Post` / `Ad` / `Faq` / `Testimonial` | المحتوى والتسويق |
+| `DoctorRating` | تقييم الأطباء |
+| `ContactMessage` | رسائل التواصل |
+| `Setting` | إعدادات النظام |
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+---
 
-## Security Vulnerabilities
+## 🛠️ المتطلبات
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+- **PHP** >= 8.3
+- **Composer** >= 2.0
+- **Node.js** >= 20 (لـ Vite/Frontend assets)
+- **Database**: MySQL 
+- **Redis** (اختياري — للـ Cache و Queue)
 
-## License
+### الحزم الرئيسية
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```json
+{
+  "laravel/framework": "^13.8",
+  "laravel/sanctum": "^4.0",
+  "laravel/socialite": "^5.29",
+  "laravel/reverb": "^1.0",
+  "doctrine/dbal": "^4.4"
+}
+```
+
+---
+
+## 🚀 التثبيت والإعداد
+
+### 1. استنساخ المستودع
+
+```bash
+git clone https://github.com/nabil-assi/CareLink-backend-system.git
+cd CareLink-backend-system
+```
+
+### 2. تثبيت الحزم
+
+```bash
+# PHP dependencies
+composer install
+
+# Node dependencies (للـ Vite)
+npm install
+npm run build
+```
+
+### 3. إعداد البيئة
+
+```bash
+cp .env.example .env
+php artisan key:generate
+```
+
+### 4. قاعدة البيانات
+
+```bash
+# SQLite (افتراضي)
+touch database/database.sqlite
+
+# تشغيل المايجريشنز
+php artisan migrate --force
+
+# تعبئة البيانات الأولية (حسابات تجريبية)
+php artisan db:seed --class=RoleAccountsSeeder
+```
+
+### 5. تشغيل الخادم
+
+```bash
+# تشغيل الخادم فقط
+php artisan serve
+
+# أو تشغيل كل الخدمات (Server + Queue + Logs + Vite)
+composer run dev
+```
+
+---
+
+## ⚙️ البيئة والإعدادات
+
+### ملف `.env` الرئيسي
+
+```env
+APP_NAME=CareLink
+APP_URL=http://localhost
+
+# Database (Mysql افتراضي)
+DB_CONNECTION=mysql
+
+# Queue & Cache
+QUEUE_CONNECTION=database
+CACHE_STORE=database
+
+# Google OAuth (لتسجيل الدخول بالجوجل)
+GOOGLE_CLIENT_ID=your-client-id
+GOOGLE_CLIENT_SECRET=your-client-secret
+GOOGLE_REDIRECT_URI=http://127.0.0.1:8000/api/auth/google/callback
+
+# Frontend URL (لـ CORS)
+FRONTEND_URL=http://localhost:5173
+
+# Mail (لاستعادة كلمة المرور)
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+```
+
+### الحسابات التجريبية (من Seeder)
+
+| الدور | البريد | كلمة المرور |
+|-------|--------|-------------|
+| Admin | `admin@gmail.com` | `12345678` |
+| Doctor | `doctor@gmail.com` | `12345678` |
+| Patient | `patient@gmail.com` | `12345678` |
+| Reception | `reception@gmail.com` | `12345678` |
+| Lab | `lab@gmail.com` | `12345678` |
+
+---
+
+## 🔌 API Endpoints
+
+### المصادقة (Auth)
+
+| Method | Endpoint | الوصف |
+|--------|----------|-------|
+| `POST` | `/api/patient/register` | تسجيل مريض جديد |
+| `POST` | `/api/patient/login` | دخول المريض |
+| `POST` | `/api/doctor/register` | تسجيل طبيب جديد |
+| `POST` | `/api/doctor/login` | دخول الطبيب |
+| `POST` | `/api/admin/login` | دخول الأدمن |
+| `POST` | `/api/staff/login` | دخول الموظفين (استقبال/مختبر/أشعة/صيدلية/مخزون) |
+| `GET`  | `/api/auth/google` | تسجيل دخول بـ Google |
+
+### المريض (Patient)
+
+| Method | Endpoint | الوصف |
+|--------|----------|-------|
+| `GET`  | `/api/patient/profile` | الملف الشخصي |
+| `PATCH`| `/api/patient/profile` | تحديث الملف |
+| `GET`  | `/api/patient/medical-profile` | الملف الطبي |
+| `POST` | `/api/patient/appointments` | حجز موعد |
+| `GET`  | `/api/patient/appointments` | مواعيدي |
+| `PATCH`| `/api/patient/appointments/{id}/cancel` | إلغاء موعد |
+| `GET`  | `/api/patient/medical-records` | السجلات الطبية |
+| `POST` | `/api/patient/ratings` | تقييم طبيب |
+
+### الطبيب (Doctor)
+
+| Method | Endpoint | الوصف |
+|--------|----------|-------|
+| `GET`  | `/api/doctor/profile` | الملف الشخصي |
+| `GET`  | `/api/doctor/appointments` | مواعيدي |
+| `PATCH`| `/api/doctor/appointments/{id}/cancel` | إلغاء موعد |
+| `POST` | `/api/doctor/appointments/{id}/medical-records` | إضافة سجل طبي |
+| `GET`  | `/api/doctor/appointments/{id}/medical-records` | عرض السجل الطبي |
+| `POST` | `/api/doctor/appointments/{id}/prescriptions` | إضافة وصفة |
+| `POST` | `/api/doctor/appointments/{id}/lab-orders` | طلب تحليل |
+| `POST` | `/api/doctor/appointments/{id}/imaging-orders` | طلب أشعة |
+
+### الاستقبال (Reception)
+
+| Method | Endpoint | الوصف |
+|--------|----------|-------|
+| `POST` | `/api/reception/patients` | تسجيل مريض جديد |
+| `GET`  | `/api/reception/patients` | قائمة المرضى |
+| `POST` | `/api/reception/appointments` | حجز موعد |
+| `PATCH`| `/api/reception/appointments/{id}/check-in` | تسجيل وصول |
+| `POST` | `/api/reception/shift-handover` | تسليم الشيفت |
+
+### الأدمن (Admin)
+
+| Method | Endpoint | الوصف |
+|--------|----------|-------|
+| `GET`  | `/api/admin/dashboard` | لوحة التحكم |
+| `GET`  | `/api/admin/patients` | جميع المرضى |
+| `GET`  | `/api/admin/doctors` | جميع الأطباء |
+| `PATCH`| `/api/admin/doctors/{id}/approve` | قبول طبيب |
+| `DELETE`| `/api/admin/doctors/{id}/reject` | رفض طبيب |
+| `GET`  | `/api/admin/staff` | إدارة الموظفين |
+| `POST` | `/api/admin/staff` | إضافة موظف |
+| `GET`  | `/api/admin/posts` | إدارة المنشورات |
+| `POST` | `/api/admin/posts` | إضافة منشور |
+| `GET`  | `/api/admin/ads` | إدارة الإعلانات |
+| `POST` | `/api/admin/broadcast` | بث إشعار عام |
+| `GET`  | `/api/admin/appointments` | جميع المواعيد |
+
+### المختبر (Lab)
+
+| Method | Endpoint | الوصف |
+|--------|----------|-------|
+| `GET`  | `/api/laboratory/orders` | طلبات التحاليل |
+| `POST` | `/api/laboratory/orders/{id}/start` | بدء التحليل |
+| `POST` | `/api/laboratory/orders/{id}/complete` | إكمال التحليل |
+| `POST` | `/api/laboratory/orders/{id}/redo` | إعادة التحليل |
+
+### الأشعة (Radiology)
+
+| Method | Endpoint | الوصف |
+|--------|----------|-------|
+| `GET`  | `/api/radiology/orders` | طلبات الأشعة |
+| `POST` | `/api/radiology/orders/{id}/complete` | إكمال الأشعة |
+
+### الصيدلية (Pharmacy)
+
+| Method | Endpoint | الوصف |
+|--------|----------|-------|
+| `GET`  | `/api/pharmacy/prescriptions` | الوصفات الطبية |
+| `POST` | `/api/pharmacy/prescriptions/{id}/ready` | تجهيز الوصفة |
+| `POST` | `/api/pharmacy/prescriptions/{id}/dispense` | صرف الأدوية |
+
+### المخزون (Inventory)
+
+| Method | Endpoint | الوصف |
+|--------|----------|-------|
+| `GET`  | `/api/inventory/items` | عرض الأصناف |
+| `POST` | `/api/inventory/items` | إضافة صنف |
+| `PUT`  | `/api/inventory/items/{id}` | تعديل صنف |
+| `DELETE`| `/api/inventory/items/{id}` | حذف صنف |
+| `POST` | `/api/inventory/items/{id}/adjust` | تعديل الكمية |
+| `GET`  | `/api/inventory/operations` | سجل العمليات |
+
+### المحادثات (Chat)
+
+| Method | Endpoint | الوصف |
+|--------|----------|-------|
+| `GET`  | `/api/appointments/{id}/conversation` | بدء/عرض محادثة |
+| `GET`  | `/api/conversations/{id}/messages` | رسائل المحادثة |
+| `POST` | `/api/conversations/{id}/messages` | إرسال رسالة |
+| `GET`  | `/api/chat/unread-counts` | عدد الرسائل غير المقروءة |
+
+### الإشعارات (Notifications)
+
+| Method | Endpoint | الوصف |
+|--------|----------|-------|
+| `GET`  | `/api/notifications/mine` | إشعاراتي |
+| `GET`  | `/api/notifications/unread-count` | العدد غير المقروء |
+| `POST` | `/api/notifications/{id}/read` | تحديد كمقروء |
+| `POST` | `/api/notifications/read-all` | تحديد الكل كمقروء |
+
+### المحتوى العام (Public)
+
+| Method | Endpoint | الوصف |
+|--------|----------|-------|
+| `GET`  | `/api/landing` | بيانات الصفحة الرئيسية |
+| `GET`  | `/api/articles` | المقالات الطبية |
+| `GET`  | `/api/faqs` | الأسئلة الشائعة |
+| `GET`  | `/api/testimonials` | شهادات المرضى |
+| `POST` | `/api/contact` | رسالة تواصل |
+
+---
+
+## 🔒 الأمان والصلاحيات
+
+### نظام المصادقة
+- **Laravel Sanctum**: توكنات API آمنة
+- **Google OAuth 2.0**: تسجيل دخول اجتماعي
+- **Middleware مخصص**: `CheckRole` للتحقق من الأدوار
+
+### الأدوار المدعومة (Roles)
+```php
+'admin', 'doctor', 'patient', 'reception', 
+'lab', 'pharmacy', 'radiology', 'inventory_manager'
+```
+
+### حماية المسارات
+```php
+Route::middleware(['auth:sanctum', 'checkRole:admin'])->group(...);
+Route::middleware(['auth:sanctum', 'checkRole:doctor'])->group(...);
+Route::middleware(['auth:sanctum', 'checkRole:inventory_manager,pharmacy,admin'])->group(...);
+```
+
+### حالات المواعيد (Appointment Status)
+```
+pending → confirmed → checked_in → in_progress → completed → cancelled
+```
+
+---
+
+## 🧪 الاختبارات
+
+```bash
+# تشغيل جميع الاختبارات
+php artisan test
+
+# أو باستخدام Pest
+./vendor/bin/pest
+```
+
+---
+
+## 📁 هيكل المشروع
+
+```
+CareLink-backend-system/
+├── app/
+│   ├── Http/
+│   │   ├── Controllers/
+│   │   │   ├── Api/              # كونترولرز الـ API
+│   │   │   │   ├── Admin/        # كونترولرز الأدمن
+│   │   │   │   ├── Reception/    # كونترولرز الاستقبال
+│   │   │   │   ├── AdminAuthController.php
+│   │   │   │   ├── AppointmentController.php
+│   │   │   │   ├── ChatController.php
+│   │   │   │   ├── DoctorAuthController.php
+│   │   │   │   ├── DoctorController.php
+│   │   │   │   ├── InventoryController.php
+│   │   │   │   ├── LabOrderController.php
+│   │   │   │   ├── PatientAuthController.php
+│   │   │   │   ├── PatientController.php
+│   │   │   │   ├── PharmacyController.php
+│   │   │   │   ├── RadiologyController.php
+│   │   │   │   └── ...
+│   │   │   └── Auth/
+│   │   │       └── GoogleAuthController.php
+│   │   └── Middleware/
+│   │       ├── CheckRole.php
+│   │       ├── EnsureUserIsAdmin.php
+│   │       ├── EnsureUserIsDoctor.php
+│   │       └── EnsureUserIsPatient.php
+│   ├── Models/                   # 28 Model
+│   └── ...
+├── database/
+│   ├── migrations/               # 40+ migration
+│   └── seeders/
+│       └── RoleAccountsSeeder.php
+├── routes/
+│   ├── api.php                   # API Routes الرئيسية
+│   └── web.php
+├── tests/                        # Pest PHP Tests
+├── composer.json
+├── .env.example
+└── README.md
+```
+
+---
+
+## 📝 الترخيص
+
+هذا المشروع مرخص بموجب [MIT License](LICENSE).
+
+---
+
+<div align="center">
+
+**صنع بـ ❤️ لإدارة العيادات بذكاء**
+
+</div>
