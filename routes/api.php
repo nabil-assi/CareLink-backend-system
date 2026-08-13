@@ -1,29 +1,21 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\AdController;
-use App\Http\Controllers\Api\Admin\NotificationController;
 use App\Http\Controllers\Api\Admin\PostController;
 use App\Http\Controllers\Api\Admin\SettingController;
-use App\Http\Controllers\Api\AdminAuthController;
-use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\BroadcastController;
 use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\ContactController;
-use App\Http\Controllers\Api\DoctorAuthController;
-use App\Http\Controllers\Api\DoctorController;
 use App\Http\Controllers\Api\InventoryController;
 use App\Http\Controllers\Api\InventoryOperationController;
 use App\Http\Controllers\Api\LabOrderController;
 use App\Http\Controllers\Api\LandingController;
 use App\Http\Controllers\Api\MyNotificationController;
 use App\Http\Controllers\Api\OfferController;
-use App\Http\Controllers\Api\PatientAuthController;
 use App\Http\Controllers\Api\PatientController;
-use App\Http\Controllers\Api\PharmacyController;
 use App\Http\Controllers\Api\ProfileController;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Artisan;
 
 Route::get('/articles', [LandingController::class, 'getPublishedArticles']);
 Route::get('/articles/{slug}', [LandingController::class, 'showArticles']);
@@ -40,38 +32,16 @@ Route::get('/offers', [OfferController::class, 'index']);
 Route::post('/newsletter/subscribe', [OfferController::class, 'subscribe']);
 
 Route::middleware('auth:sanctum')->group(function () {
+    
     Route::get('/appointments/{appointmentId}/conversation', [ChatController::class, 'startOrGetConversation']);
-
     // رفع/تحديث الصورة الشخصية - شغالة لأي دور (موظف، طبيب، مريض...)
     Route::post('/profile/picture', [ProfileController::class, 'updatePicture']);
-
     Route::get('/conversations/{conversationId}/messages', [ChatController::class, 'getMessages']);
     Route::post('/conversations/{conversationId}/messages', [ChatController::class, 'sendMessage']);
-
-    // مسار عام يشتغل لأي دور مسجل دخول - الفرونت أصلاً بيجرب مسار البث الخاص
-    // بدوره الأول (/pharmacy/broadcasts...الخ) وبعدين بيرجع لهاد كـ fallback،
-    // بس الصيدلية/المختبر/الأشعة/الاستقبال/مدير المخزون ما كان عندهم أي مسار بث إطلاقاً
     Route::get('/broadcasts', [BroadcastController::class, 'mine']);
-
-    // Route::get('/conversations/{conversationId}/messages', [ChatController::class, 'getMessages']);
-    // Route::post('/conversations/{conversationId}/messages', [ChatController::class, 'sendMessage']);
-
-    // Route::get('/pharmacy/prescriptions', [PharmacyController::class, 'index']);
-    // Route::post('/pharmacy/prescriptions/{id}/ready', [PharmacyController::class, 'markReady']);
-    // Route::post('/pharmacy/prescriptions/{id}/dispense', [PharmacyController::class, 'dispense']);
-    //
-    //
-    // Route::get('/pharmacy/home-stats', [PharmacyController::class, 'homeStats']);
-    //
-    // Route::get('/pharmacy/inventory', [PharmacyController::class, 'getInventory']);
-    // Route::post('/pharmacy/inventory', [PharmacyController::class, 'storeInventory']);
-    // Route::put('/pharmacy/inventory/{id}', [PharmacyController::class, 'updateInventory']);
-    // Route::post('/pharmacy/inventory/{id}/adjust', [PharmacyController::class, 'adjustQuantity']);
 
 });
 
-// كانت هاي بدون أي فحص دور - أي مريض أو طبيب مسجل دخول يقدر يجيب بيانات
-// كل المرضى وكل المواعيد بالنظام. ضفنا checkRole:admin زي باقي مسارات الأدمن.
 Route::middleware(['auth:sanctum', 'checkRole:admin'])->group(function () {
     Route::get('/admin/posts', [PostController::class, 'index']);
     Route::post('/admin/posts', [PostController::class, 'store']);
@@ -84,8 +54,6 @@ Route::middleware(['auth:sanctum', 'checkRole:admin'])->group(function () {
     Route::get('/admin/appointments', [AppointmentController::class, 'index']);
 });
 
-// كانت هاي المسارات مفتوحة من غير تسجيل دخول إطلاقاً - أي حد بيقدر يشوف/يعدل
-// نتائج التحاليل. ضفنا نفس الحماية (auth:sanctum + checkRole) يلي عند باقي الأدوار
 Route::middleware(['auth:sanctum', 'checkRole:laboratory'])->prefix('laboratory')->group(function () {
     Route::get('/orders', [LabOrderController::class, 'index']);
     Route::post('/orders/{id}/start', [LabOrderController::class, 'start']);
@@ -93,9 +61,6 @@ Route::middleware(['auth:sanctum', 'checkRole:laboratory'])->prefix('laboratory'
     Route::post('/orders/{id}/redo', [LabOrderController::class, 'redo']);
 });
 
-// نفس الشي هون - كانت مفتوحة لأي حد يعدل كميات وأسعار المخزون بدون تسجيل دخول.
-// القراءة بس (عرض الأصناف) مسموحة لمدير المخزون والصيدلية سوا، لأنه شاشة
-// "توفر المخزون" بالصيدلية بتعتمد على GET items. التعديل/الحذف مقصور على مدير المخزون فقط.
 Route::middleware(['auth:sanctum', 'checkRole:inventory_manager,pharmacy,admin'])->prefix('inventory')->group(function () {
     Route::get('/items', [InventoryController::class, 'index']);
     Route::get('/items/{inventory}', [InventoryController::class, 'show']);
@@ -116,81 +81,3 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/notifications/read-all', [MyNotificationController::class, 'markAllAsRead']);
     Route::get('/chat/unread-counts', [ChatController::class, 'unreadCounts']);
 });
- 
-
-// كان في نسختين من تسجيل الدخول بـ Google شغالتين بنفس الوقت - هاي كانت نسخة
-// قديمة/مهجورة (namespace Auth مش Api)، بترجّع لصفحة فرونت /auth/callback
-// غير موجودة أصلاً بالموقع، وما فيها أي فحص لحظر/تعليق الحساب زي النسخة
-// الحقيقية (routes/api/auth.php -> Api\GoogleAuthController). حذفناها نهائياً
-// بدل ما نصلحها مرتين - كل تسجيل الدخول بـ Google هلق يمر بنسخة واحدة بس.
-
-
-/**
- * *
- *
- *Route::post('/patient/register', [PatientAuthController::class, 'register']);
- *Route::post('/patient/login', [PatientAuthController::class, 'login']);
- *Route::post('/patient/forgot-password', [PatientAuthController::class, 'forgotPassword']);
- *Route::post('/patient/reset-password', [PatientAuthController::class, 'resetPassword']);
- *
- *Route::post('/doctor/register', [DoctorAuthController::class, 'register']);
- *Route::post('/doctor/login', [DoctorAuthController::class, 'login']);
- *Route::post('/doctor/forgot-password', [DoctorAuthController::class, 'forgotPassword']);
- *Route::post('/doctor/reset-password', [DoctorAuthController::class, 'resetPassword']);
- *
- *Route::post('/admin/login', [AdminAuthController::class, 'login']);
- *Route::get('/admin/list', [AdminController::class, 'getAllAdmins']);
- *Route::get('/admin/patients', [PatientController::class, 'getAllPatients']);
- *
- *Route::prefix('admin')->middleware(['auth:sanctum', 'checkRole:admin'])->group(function () {
- *
- *    Route::get('/doctors', [DoctorController::class, 'index']);
- *    Route::get('/pending-doctors', [AdminController::class, 'showPending']);
- *    Route::patch('/approve-doctor/{id}', [AdminController::class, 'approveDoctor']);
- *    Route::delete('/reject-doctor/{id}', [AdminController::class, 'rejectDoctor']);
- *
- *    Route::get('/ads', [AdController::class, 'index']);
- *    Route::post('/ads', [AdController::class, 'store']);
- *    Route::post('/ads/{id}', [AdController::class, 'update']);
- *    Route::delete('/ads/{id}', [AdController::class, 'destroy']);
- *
- *    Route::get('/notifications', [NotificationController::class, 'index']);
- *    Route::post('/notifications/general', [NotificationController::class, 'sendGeneral']);
- *    Route::post('/notifications/user', [NotificationController::class, 'sendToUser']);
- *
- *    Route::get('/posts', [PostController::class, 'index']);
- *    Route::post('/posts', [PostController::class, 'store']);
- *    Route::delete('/posts/{id}', [PostController::class, 'destroy']);
- *
- *    Route::post('/broadcast', [AdminController::class, 'sendBroadcast']);
- *    Route::get('/broadcasts', [AdminController::class, 'getAllBroadcasts']);
- *
- *});
- *
- *Route::prefix('doctor')->middleware(['auth:sanctum', 'checkRole:doctor'])->group(function () {
- *    Route::get('/profile', [DoctorController::class, 'profile']);
- *
- *    Route::get('/appointments', [AppointmentController::class, 'index']);
- *    Route::patch('/appointments/{id}/cancel', [AppointmentController::class, 'cancel']);
- *
- *    Route::post('/appointments/{appointment}/medical-records', [AppointmentController::class, 'storeMedicalRecord']);
- *    Route::get('/appointments/{appointment}/medical-records', [AppointmentController::class, 'getMedicalRecord']);
- *    Route::get('/broadcasts', [DoctorController::class, 'getBroadcasts']);
- *
- *});
- *
- *Route::prefix('patient')->middleware(['auth:sanctum', 'checkRole:patient'])->group(function () {
- *    Route::get('/profile', [PatientController::class, 'profile']);
- *    Route::patch('/profile', [PatientController::class, 'updateProfile']);
- *    Route::get('/medical-profile', [PatientController::class, 'getMedicalProfile']);
- *
- *    Route::post('/appointments', [AppointmentController::class, 'store']);
- *    Route::get('/appointments', [AppointmentController::class, 'index']);
- *    Route::patch('/appointments/{id}/cancel', [AppointmentController::class, 'cancel']);
- *
- *    Route::get('/medical-records', [PatientController::class, 'myMedicalRecords']);
- *    Route::get('/broadcasts', [PatientController::class, 'getBroadcasts']);
- *});
- *
-
- **/
