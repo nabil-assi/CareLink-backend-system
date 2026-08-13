@@ -82,6 +82,8 @@ class NotificationService
         return match ($type) {
             'doctor_approved' => 'تم تفعيل حسابك في CareLink',
             'doctor_rejected' => 'تحديث بخصوص طلب انضمامك',
+            'doctor_suspended' => 'تم إيقاف حسابك في CareLink',
+            'doctor_activated' => 'تم إعادة تفعيل حسابك في CareLink',
             'password_reset' => 'إعادة تعيين كلمة السر',
             default => 'إشعار من CareLink',
         };
@@ -92,6 +94,8 @@ class NotificationService
         return match ($type) {
             'doctor_approved' => 'emails.doctors.approved',
             'doctor_rejected' => 'emails.doctors.rejected',
+            'doctor_suspended' => 'emails.doctors.suspended',
+            'doctor_activated' => 'emails.doctors.activated',
             'password_reset' => 'emails.auth.password_reset',
             default => 'emails.general',
         };
