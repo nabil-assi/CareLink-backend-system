@@ -340,11 +340,22 @@ class AppointmentController extends Controller
     {
         $doctorId = auth()->id();
 
+        // labOrders/imagingOrders ما كانوا محملين أصلاً هون، وحتى لو كانوا،
+        // Eloquent كان رح يرجعهم snake_case (lab_orders/imaging_orders) مش
+        // labs/imaging يلي الفرونت (DoctorPatientsPage و DoctorMedicalRecordsPage)
+        // بيقرأهم فعلياً - فكانت شارات التحاليل/الأشعة تضل فاضية دايماً
         $records = Appointment::where('doctor_id', $doctorId)
             ->whereNotNull('diagnosis') // المواعيد التي تم تسجيل تشخيص لها فقط
-            ->with('patient')
+            ->with(['patient', 'labOrders', 'imagingOrders'])
             ->orderBy('updated_at', 'desc')
-            ->get();
+            ->get()
+            ->map(function ($appointment) {
+                $appointment->labs = $appointment->labOrders;
+                $appointment->imaging = $appointment->imagingOrders;
+                unset($appointment->labOrders, $appointment->imagingOrders);
+
+                return $appointment;
+            });
 
         return response()->json([
             'message' => 'تم استرجاع السجلات الطبية بنجاح',
