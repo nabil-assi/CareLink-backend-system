@@ -41,7 +41,7 @@ class StaffController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:6',
-            'role' => 'required|string',
+            'role' => 'required|string|in:doctor,reception,laboratory,pharmacy,radiology,inventory_manager',
             'national_id' => 'required|string|unique:users,national_id',
             'phone' => 'nullable|string',
             'department' => 'nullable|string',
