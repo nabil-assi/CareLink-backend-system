@@ -29,6 +29,7 @@ class UserFactory extends Factory
             'password' => Hash::make('password'),
             'phone' => fake()->phoneNumber(),
             'role' => 'patient', // القيمة الافتراضية
+            'status' => true,
         ];
     }
 
