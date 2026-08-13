@@ -192,9 +192,12 @@ class AppointmentController extends Controller
             ], 403);
         }
 
-        // 3. تحديث الحالة
+        // 3. تحديث الحالة - عمود cancellation_reason كان موجود بالجدول من زمان
+        // بس محدا كان يكتب فيه، فسبب الإلغاء يلي المريض/الطبيب يكتبه كان
+        // يضيع بصمت ومحدا يقدر يشوفه بعدين
         $appointment->update([
             'status' => 'cancelled',
+            'cancellation_reason' => $request->input('reason'),
         ]);
 
         return response()->json([

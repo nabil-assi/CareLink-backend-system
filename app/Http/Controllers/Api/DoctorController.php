@@ -126,9 +126,7 @@ class DoctorController extends Controller
         ], 200);
     }
 
-    // نفس منطق PatientController::updateProfilePicture بالظبط (نخزن المسار
-    // النسبي بس بقاعدة البيانات، والرابط الكامل بيترجع بالرد فقط) عشان يضل
-    // متوافق مع صفحة إعدادات المريض يلي مبنية بنفس الطريقة
+    // نفس منطق PatientController::updateProfilePicture بالظبط
     public function updateProfilePicture(Request $request)
     {
         $request->validate([
@@ -146,7 +144,10 @@ class DoctorController extends Controller
 
         return response()->json([
             'message' => 'تم تحديث الصورة الشخصية',
-            'profile_picture' => asset('storage/'.$path),
+            // مسار نسبي متل باقي نقاط الوصول - كان هون بيرجع رابط كامل
+            // (asset()) وهاد كان يسبب رابط مكرر مرتين بالـ header/sidebar
+            // لما الفرونت يحط البادئة عليه كمان
+            'profile_picture' => $path,
         ]);
     }
 

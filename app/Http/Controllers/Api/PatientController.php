@@ -289,7 +289,10 @@ public function myMedicalRecords(Request $request)
 
             return response()->json([
                 'message' => 'تم تحديث الصورة الشخصية',
-                'profile_picture' => asset('storage/'.$path),
+                // مسار نسبي بس، متل ما بترجع كل نقاط الوصول التانية وبيتخزن
+                // بقاعدة البيانات - كانت هون بس بترجع رابط كامل (asset()) وهاد
+                // كان يسبب رابط مكرر مرتين لما الفرونت يحط البادئة عليه كمان
+                'profile_picture' => $path,
             ]);
 
         } catch (\Throwable $e) {
