@@ -109,14 +109,17 @@ class PatientController extends Controller
 
         $user = $request->user();
 
+        // بقية الحقول nullable - لو ما انبعتوا بالطلب أصلاً (مش null صراحةً)
+        // كانوا بيتمسحوا لـ null بدل ما يضلوا القيمة المخزنة، لأنه array_key
+        // مش موجود بـ $validated أساساً
         $user->update([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'phone' => $validated['phone'],
-            'national_id' => $validated['national_id'],
-            'birth_date' => $validated['birth_date'],
-            'gender' => $validated['gender'],
-            'address' => $validated['address'],
+            'phone' => $validated['phone'] ?? $user->phone,
+            'national_id' => $validated['national_id'] ?? $user->national_id,
+            'birth_date' => $validated['birth_date'] ?? $user->birth_date,
+            'gender' => $validated['gender'] ?? $user->gender,
+            'address' => $validated['address'] ?? $user->address,
         ]);
 
         return response()->json([
