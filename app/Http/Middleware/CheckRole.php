@@ -14,8 +14,10 @@ class CheckRole
      */
     public function handle(Request $request, Closure $next, ...$roles)
     {
-        // نتحقق من وجود مستخدم وأن دوره ضمن الأدوار المسموح بها
-        if ($request->user() && in_array($request->user()->role, $roles)) {
+        $user = $request->user();
+
+        // تحقق إذا المستخدم مسجل دخول، حالته نشطة (true أو 1)، ودوره ضمن الأدوار المسموح بها
+        if ($user && $user->status && in_array($user->role, $roles)) {
             return $next($request);
         }
 

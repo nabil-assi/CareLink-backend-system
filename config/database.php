@@ -62,10 +62,13 @@ return [
             // 'options' => extension_loaded('pdo_mysql') ? array_filter([
             //     Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             // ]) : [],
-            'options' => [
-                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
-                PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false, // جرب false إذا لم تنجح true
-            ],
+            // 'options' => [
+            //     PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            //     PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false, // جرب false إذا لم تنجح true
+            // ],
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
         ],
 
         'mariadb' => [
