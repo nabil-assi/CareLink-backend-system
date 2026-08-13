@@ -29,13 +29,13 @@ class UserFactory extends Factory
             'password' => Hash::make('password'),
             'phone' => fake()->phoneNumber(),
             'role' => 'patient', // القيمة الافتراضية
-            // status هون لازم ينكتب صراحةً رغم إنه عمود قاعدة البيانات نفسه
+             // status هون لازم ينكتب صراحةً رغم إنه عمود قاعدة البيانات نفسه
             // Defaultه true - لأنه Eloquent ما بيرجّع يقرأ الـ default من القاعدة
             // على الـ instance يلي بالذاكرة بعد create()، فـ actingAs() بالتيست
             // كان عم يستخدم نسخة status=null (falsy) بدل القيمة الحقيقية 1،
             // وهيك كل تيست كان عم ينرفض بـ 403 من CheckRole رغم إنه المستخدم
             // فعلياً مو موقوف بقاعدة البيانات
-            'status' => true,
+             'status' => true,
         ];
     }
 
