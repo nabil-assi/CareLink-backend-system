@@ -61,4 +61,16 @@ class StaffAuthController extends Controller
 
         return response()->json(['message' => 'تم تحديث كلمة المرور بنجاح']);
     }
+
+    // تسجيل الخروج - شغالة لأي دور مسجل دخول (نفس فكرة changePassword فوق).
+    // قبلها ما كان في مسار logout إطلاقاً، فـ "تسجيل الخروج" بالفرونت كان مجرد
+    // مسح localStorage محلياً - التوكن نفسه يضل صالح للأبد على السيرفر (Sanctum
+    // expiration = null بهاد المشروع) وممكن أي حد سرقه يستمر يستخدمه حتى بعد
+    // ما صاحب الحساب "يسجل خروج"
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json(['message' => 'تم تسجيل الخروج بنجاح']);
+    }
 }

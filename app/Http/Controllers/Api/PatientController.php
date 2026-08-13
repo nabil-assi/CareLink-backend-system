@@ -328,13 +328,24 @@ public function myMedicalRecords(Request $request)
             ], 422);
         }
 
-        $rating = DoctorRating::create([
-            'patient_id' => $request->user()->id,
-            'doctor_id' => $appointment->doctor_id,
-            'appointment_id' => $appointment->id,
-            'rating' => $request->rating,
-            'comment' => $request->comment,
-        ]);
+        // في قيد unique على (patient_id, appointment_id) بقاعدة البيانات كخط
+        // دفاع أخير - لو صارت طلبين بنفس اللحظة (ضغطة مزدوجة، إعادة محاولة
+        // شبكة...) وعدّوا فحص exists() فوق سوا، الطلب التاني رح يصطدم بالقيد
+        // ونمسكه هون بدل ما يطلع خطأ سيرفر خام (500)
+        try {
+            $rating = DoctorRating::create([
+                'patient_id' => $request->user()->id,
+                'doctor_id' => $appointment->doctor_id,
+                'appointment_id' => $appointment->id,
+                'rating' => $request->rating,
+                'comment' => $request->comment,
+            ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'لقد قمت بتقييم هذا الموعد مسبقاً',
+            ], 422);
+        }
 
         return response()->json([
             'status' => true,

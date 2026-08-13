@@ -11,19 +11,26 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
     Route::post('/patient/register', [PatientAuthController::class, 'register']);
-    Route::post('/patient/login', [PatientAuthController::class, 'login']);
-    Route::post('/patient/forgot-password', [PatientAuthController::class, 'forgotPassword']);
-    Route::post('/patient/reset-password', [PatientAuthController::class, 'resetPassword']);
     // زر "المتابعة بـ Google" بصفحتي تسجيل الدخول/الحساب الجديد للمريض
     Route::get('/google/redirect', [GoogleAuthController::class, 'redirect']);
     Route::get('/google/callback', [GoogleAuthController::class, 'callback']);
     Route::post('/doctor/register', [DoctorAuthController::class, 'register']);
-    Route::post('/doctor/login', [DoctorAuthController::class, 'login']);
-    Route::post('/doctor/forgot-password', [DoctorAuthController::class, 'forgotPassword']);
-    Route::post('/doctor/reset-password', [DoctorAuthController::class, 'resetPassword']);
-    Route::post('/admin/login', [AdminAuthController::class, 'login']);
 
-    Route::post('/staff/login', [StaffAuthController::class, 'login']);
+    // كل مسارات تسجيل الدخول ورموز OTP كانت من غير أي حد لعدد المحاولات -
+    // رمز OTP نسيان كلمة السر مثلاً هو رقم من 5 خانات (90 ألف احتمال) صالح
+    // 10 دقايق، وبدون throttle كان ممكن حدا يجرب كل الاحتمالات الممكنة بهاي
+    // المدة ويسرق أي حساب بس بمعرفة إيميله. throttle:6,1 يعني 6 محاولات
+    // بالدقيقة بالكثير لكل IP - كافية لأي استخدام حقيقي وبتخلي التخمين غير عملي
+    Route::middleware('throttle:6,1')->group(function () {
+        Route::post('/patient/login', [PatientAuthController::class, 'login']);
+        Route::post('/patient/forgot-password', [PatientAuthController::class, 'forgotPassword']);
+        Route::post('/patient/reset-password', [PatientAuthController::class, 'resetPassword']);
+        Route::post('/doctor/login', [DoctorAuthController::class, 'login']);
+        Route::post('/doctor/forgot-password', [DoctorAuthController::class, 'forgotPassword']);
+        Route::post('/doctor/reset-password', [DoctorAuthController::class, 'resetPassword']);
+        Route::post('/admin/login', [AdminAuthController::class, 'login']);
+        Route::post('/staff/login', [StaffAuthController::class, 'login']);
+    });
 });
 
 // /admin/list و /admin/patients كانوا هون بدون أي حماية (auth:sanctum ولا
@@ -39,4 +46,5 @@ Route::middleware(['auth:sanctum', 'checkRole:admin'])->prefix('auth')->group(fu
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/staff/change-password', [StaffAuthController::class, 'changePassword']);
     Route::post('/auth/change-password', [StaffAuthController::class, 'changePassword']);
+    Route::post('/auth/logout', [StaffAuthController::class, 'logout']);
 });
