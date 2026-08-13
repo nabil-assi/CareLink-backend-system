@@ -5,9 +5,9 @@ use Illuminate\Support\Facades\Route;
 
 // كانت بس auth:sanctum (أي حساب مسجل دخول، مش موظف استقبال تحديداً) - ضفنا
 // checkRole زي باقي الأدوار
+
 Route::middleware(['auth:sanctum', 'checkRole:reception'])->prefix('reception')->group(function () {
-    Route::get('/patients', [ReceptionController::class, 'listPatients']);
-    Route::post('/patients', [ReceptionController::class, 'registerPatient']);
+     Route::post('/patients', [ReceptionController::class, 'registerPatient']);
     Route::post('/register-and-book', [ReceptionController::class, 'registerAndBook']);
 
     Route::get('/doctor-schedule', [ReceptionController::class, 'getDoctorSchedule']);
@@ -36,3 +36,9 @@ Route::middleware(['auth:sanctum', 'checkRole:reception'])->prefix('reception')-
     Route::post('/shift-handovers/{id}/acknowledge', [ReceptionController::class, 'acknowledgeShiftHandover']);
 
 });
+
+Route::middleware(['auth:sanctum', 'checkRole:reception,admin'])->prefix('reception')->group(function () {
+
+    Route::get('/patients', [ReceptionController::class, 'listPatients']);
+});
+

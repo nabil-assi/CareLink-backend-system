@@ -13,9 +13,12 @@ use App\Http\Controllers\Api\Admin\TestimonialController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\DoctorController;
 use App\Http\Controllers\Api\PatientController;
+ 
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum', 'checkRole:admin'])->prefix('admin')->group(function () {
+
+ 
 
     Route::get('/doctors', [DoctorController::class, 'index']);
     Route::post('/doctors', [AdminController::class, 'store']);
